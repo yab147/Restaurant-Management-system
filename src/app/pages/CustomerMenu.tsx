@@ -1,11 +1,22 @@
 import { useState } from "react";
-import { ShoppingCart, Heart, MapPin, Phone, LogOut, ChefHat, Minus, Plus } from "lucide-react";
+import { ShoppingCart, Heart, Phone, LogOut, ChefHat, Minus, Plus } from "lucide-react";
 
 interface CartItem {
   id: string;
   name: string;
   price: number;
   quantity: number;
+}
+
+interface MenuItem {
+  id: string;
+  name: string;
+  price: number;
+  category: string;
+  rating: number;
+  orders: number;
+  stock: number;
+  description?: string;
 }
 
 interface CustomerMenuProps {
@@ -17,21 +28,24 @@ export function CustomerMenu({ user, onLogout }: CustomerMenuProps) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCart, setShowCart] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
 
-  const menuItems = [
-    { id: "1", name: "Kitfo", price: 450, category: "main", rating: 4.9, orders: 240 },
-    { id: "2", name: "Doro Wat", price: 380, category: "main", rating: 4.8, orders: 180 },
-    { id: "3", name: "Tibs", price: 520, category: "main", rating: 4.7, orders: 160 },
-    { id: "4", name: "Shiro", price: 200, category: "main", rating: 4.6, orders: 150 },
-    { id: "5", name: "Misir Wat", price: 180, category: "main", rating: 4.5, orders: 140 },
-    { id: "6", name: "Injera (1 pc)", price: 50, category: "bread", rating: 4.8, orders: 300 },
-    { id: "7", name: "Kocho", price: 60, category: "bread", rating: 4.4, orders: 80 },
-    { id: "8", name: "Coffee", price: 40, category: "drinks", rating: 4.9, orders: 500 },
-    { id: "9", name: "Tej", price: 120, category: "drinks", rating: 4.6, orders: 120 },
-    { id: "10", name: "Fresh Juice", price: 80, category: "drinks", rating: 4.7, orders: 200 },
-    { id: "11", name: "Tiramisu", price: 150, category: "desserts", rating: 4.8, orders: 90 },
-    { id: "12", name: "Chocolate Cake", price: 120, category: "desserts", rating: 4.7, orders: 110 },
+  const initialMenu: MenuItem[] = [
+    { id: "1", name: "Kitfo", price: 450, category: "main", rating: 4.9, orders: 240, stock: 8, description: "Spiced minced beef served with injera." },
+    { id: "2", name: "Doro Wat", price: 380, category: "main", rating: 4.8, orders: 180, stock: 6, description: "Slow-cooked chicken stew with rich berbere sauce." },
+    { id: "3", name: "Tibs", price: 520, category: "main", rating: 4.7, orders: 160, stock: 4, description: "Sautéed beef cubes with onion and peppers." },
+    { id: "4", name: "Shiro", price: 200, category: "main", rating: 4.6, orders: 150, stock: 10, description: "Chickpea stew with mild spices." },
+    { id: "5", name: "Misir Wat", price: 180, category: "main", rating: 4.5, orders: 140, stock: 5, description: "Red lentil stew with traditional flavors." },
+    { id: "6", name: "Injera (1 pc)", price: 50, category: "bread", rating: 4.8, orders: 300, stock: 50, description: "Handmade teff flatbread." },
+    { id: "7", name: "Kocho", price: 60, category: "bread", rating: 4.4, orders: 80, stock: 12, description: "Fermented enset bread slice." },
+    { id: "8", name: "Coffee", price: 40, category: "drinks", rating: 4.9, orders: 500, stock: 40, description: "Freshly brewed Ethiopian coffee." },
+    { id: "9", name: "Tej", price: 120, category: "drinks", rating: 4.6, orders: 120, stock: 20, description: "Traditional honey wine." },
+    { id: "10", name: "Fresh Juice", price: 80, category: "drinks", rating: 4.7, orders: 200, stock: 30, description: "Seasonal fruit juice." },
+    { id: "11", name: "Tiramisu", price: 150, category: "desserts", rating: 4.8, orders: 90, stock: 8, description: "Creamy coffee-flavored Italian dessert." },
+    { id: "12", name: "Chocolate Cake", price: 120, category: "desserts", rating: 4.7, orders: 110, stock: 6, description: "Rich chocolate layered cake." },
   ];
+
+  const [menuItems, setMenuItems] = useState<MenuItem[]>(initialMenu);
 
   const categories = [
     { id: "all", label: "All Items" },
@@ -45,23 +59,27 @@ export function CustomerMenu({ user, onLogout }: CustomerMenuProps) {
     ? menuItems
     : menuItems.filter(item => item.category === selectedCategory);
 
-  const addToCart = (item: typeof menuItems[0]) => {
+  const addToCart = (item: MenuItem) => {
+    const qty = quantities[item.id] && quantities[item.id] > 0 ? quantities[item.id] : 1;
+    if (item.stock <= 0) return;
+
+    // Add to cart
     const existingItem = cart.find(c => c.id === item.id);
     if (existingItem) {
-      setCart(cart.map(c =>
-        c.id === item.id ? { ...c, quantity: c.quantity + 1 } : c
-      ));
+      setCart(cart.map(c => c.id === item.id ? { ...c, quantity: c.quantity + qty } : c));
     } else {
-      setCart([...cart, { id: item.id, name: item.name, price: item.price, quantity: 1 }]);
+      setCart([...cart, { id: item.id, name: item.name, price: item.price, quantity: qty }]);
     }
+
+    // Decrease stock in menu
+    setMenuItems(menuItems.map(mi => mi.id === item.id ? { ...mi, stock: Math.max(0, mi.stock - qty) } : mi));
+    // reset quantity for the item
+    setQuantities({ ...quantities, [item.id]: 1 });
   };
 
   const updateQuantity = (id: string, quantity: number) => {
-    if (quantity <= 0) {
-      setCart(cart.filter(c => c.id !== id));
-    } else {
-      setCart(cart.map(c => c.id === id ? { ...c, quantity } : c));
-    }
+    if (quantity < 1) quantity = 1;
+    setQuantities({ ...quantities, [id]: quantity });
   };
 
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);

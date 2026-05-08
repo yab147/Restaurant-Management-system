@@ -1,15 +1,18 @@
 import { useState } from "react";
 import { X, Mail, Lock } from "lucide-react";
 
+import { Role } from "../../types";
+
 interface LoginDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onLoginSuccess: (user: { name: string; email: string }) => void;
+  onLoginSuccess: (user: { name: string; email: string; role: Role }) => void;
 }
 
 export function LoginDialog({ isOpen, onClose, onLoginSuccess }: LoginDialogProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState<Role>(Role.Admin);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -24,6 +27,7 @@ export function LoginDialog({ isOpen, onClose, onLoginSuccess }: LoginDialogProp
         onLoginSuccess({
           name: email.split("@")[0].charAt(0).toUpperCase() + email.split("@")[0].slice(1),
           email: email,
+          role: role,
         });
         setEmail("");
         setPassword("");
@@ -90,6 +94,24 @@ export function LoginDialog({ isOpen, onClose, onLoginSuccess }: LoginDialogProp
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
               />
             </div>
+          </div>
+
+          {/* Role Input */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Role
+            </label>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value as Role)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none bg-white"
+            >
+              {Object.values(Role).filter(r => r !== Role.Customer).map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Demo Hint */}

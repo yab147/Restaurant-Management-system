@@ -7,16 +7,15 @@ import { Reservations } from "./components/Dashboard/Reservations";
 import { Staff } from "./components/Dashboard/Staff";
 import { Analytics } from "./components/Dashboard/Analytics";
 import { Settings } from "./components/Dashboard/Settings";
+import { Inventory } from "./components/Dashboard/Inventory";
+import { Tables } from "./components/Dashboard/Tables";
+import { Billing } from "./components/Dashboard/Billing";
 import { Welcome } from "./pages/Welcome";
 import { LoginDialog } from "./pages/LoginDialog";
 import { CustomerWelcome } from "./pages/CustomerWelcome";
 import { CustomerLoginDialog } from "./pages/CustomerLoginDialog";
 import { CustomerMenu } from "./pages/CustomerMenu";
-
-interface StaffUser {
-  name: string;
-  email: string;
-}
+import { User, Role } from "../types";
 
 interface CustomerUser {
   name: string;
@@ -26,7 +25,7 @@ interface CustomerUser {
 
 export default function App() {
   const [userType, setUserType] = useState<"none" | "staff" | "customer">("none");
-  const [staffUser, setStaffUser] = useState<StaffUser | null>(null);
+  const [staffUser, setStaffUser] = useState<User | null>(null);
   const [customerUser, setCustomerUser] = useState<CustomerUser | null>(null);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [showCustomerLoginDialog, setShowCustomerLoginDialog] = useState(false);
@@ -36,9 +35,31 @@ export default function App() {
     setShowLoginDialog(true);
   };
 
-  const handleStaffLoginSuccess = (userData: StaffUser) => {
-    setStaffUser(userData);
+  const handleStaffLoginSuccess = (userData: { name: string; email: string; role: Role }) => {
+    setStaffUser({
+      userId: Math.floor(Math.random() * 1000),
+      name: userData.name,
+      email: userData.email,
+      phone: "123-456-7890",
+      role: userData.role,
+    });
     setUserType("staff");
+    
+    // Set default tab based on role
+    switch(userData.role) {
+      case Role.Waiter:
+        setActiveTab("tables");
+        break;
+      case Role.Chef:
+        setActiveTab("orders");
+        break;
+      case Role.Cashier:
+        setActiveTab("billing");
+        break;
+      default:
+        setActiveTab("overview");
+    }
+    
     setShowLoginDialog(false);
   };
 
@@ -79,6 +100,12 @@ export default function App() {
         return <Analytics />;
       case "settings":
         return <Settings />;
+      case "inventory":
+        return <Inventory />;
+      case "tables":
+        return <Tables />;
+      case "billing":
+        return <Billing />;
       default:
         return <Overview />;
     }

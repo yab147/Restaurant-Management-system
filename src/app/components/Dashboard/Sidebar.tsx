@@ -1,22 +1,28 @@
-import { LayoutDashboard, UtensilsCrossed, Package, Users, CalendarDays, BarChart3, Settings, LogOut, ChefHat } from 'lucide-react';
+import { LayoutDashboard, UtensilsCrossed, Package, Users, CalendarDays, BarChart3, Settings, LogOut, ChefHat, ClipboardList, Wallet, Grid3X3 } from 'lucide-react';
+import { User, Role } from '../../../types';
 
 interface SidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
-  user?: { name: string; email: string };
+  user?: User | null;
   onLogout?: () => void;
 }
 
 export function Sidebar({ activeTab, setActiveTab, user, onLogout }: SidebarProps) {
-  const menuItems = [
-    { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-    { id: 'orders', label: 'Orders', icon: UtensilsCrossed },
-    { id: 'menu', label: 'Menu', icon: Package },
-    { id: 'reservations', label: 'Reservations', icon: CalendarDays },
-    { id: 'staff', label: 'Staff', icon: Users },
-    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-    { id: 'settings', label: 'Settings', icon: Settings },
+  const allMenuItems = [
+    { id: 'overview', label: 'Overview', icon: LayoutDashboard, roles: [Role.Admin, Role.Manager] },
+    { id: 'orders', label: 'Orders', icon: UtensilsCrossed, roles: [Role.Admin, Role.Manager, Role.Waiter, Role.Chef] },
+    { id: 'menu', label: 'Menu', icon: Package, roles: [Role.Admin, Role.Manager] },
+    { id: 'inventory', label: 'Inventory', icon: ClipboardList, roles: [Role.Admin, Role.Manager] },
+    { id: 'tables', label: 'Tables', icon: Grid3X3, roles: [Role.Admin, Role.Waiter] },
+    { id: 'billing', label: 'Billing', icon: Wallet, roles: [Role.Admin, Role.Cashier] },
+    { id: 'reservations', label: 'Reservations', icon: CalendarDays, roles: [Role.Admin, Role.Manager] },
+    { id: 'staff', label: 'Staff', icon: Users, roles: [Role.Admin] },
+    { id: 'analytics', label: 'Analytics', icon: BarChart3, roles: [Role.Admin, Role.Manager] },
+    { id: 'settings', label: 'Settings', icon: Settings, roles: [Role.Admin] },
   ];
+
+  const menuItems = allMenuItems.filter(item => !user || item.roles.includes(user.role));
 
   return (
     <aside className="w-full lg:w-72 bg-white border-b lg:border-b-0 lg:border-r border-gray-200 lg:min-h-screen flex flex-col">
@@ -34,7 +40,7 @@ export function Sidebar({ activeTab, setActiveTab, user, onLogout }: SidebarProp
         {/* User Status */}
         {user && (
           <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
-            <p className="text-xs text-gray-600">Logged in as</p>
+            <p className="text-xs text-gray-600">Logged in as <span className="font-semibold text-orange-600">{user.role}</span></p>
             <p className="font-semibold text-gray-900">{user.name}</p>
             <p className="text-xs text-gray-500 truncate">{user.email}</p>
           </div>
