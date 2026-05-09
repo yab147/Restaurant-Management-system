@@ -223,7 +223,7 @@ const LandingPage = ({
 
           <div className="relative">
             <div className="rounded-3xl overflow-hidden shadow-2xl h-96">
-              <img src="https://images.pexels.com/photos/36073022/pexels-photo-36073022.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=600&w=600" alt="Chef cooking" className="w-full h-full object-cover" />
+              <img src="../../assets/chef.webp" alt="Chef cooking" className="w-full h-full object-cover" />
             </div>
             {/* Decorative card */}
             <div className="absolute -bottom-6 -left-6 rounded-2xl p-5 shadow-xl" style={{
