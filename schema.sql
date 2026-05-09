@@ -102,5 +102,4 @@ CREATE TABLE `ingredients` (
 
 -- Insert initial admin user to ensure login works
 INSERT INTO `users` (`name`, `email`, `password`, `phone`, `role`) VALUES
-('Admin User', 'admin@holy.et', 'admin123', '+251912345678', 'admin'),
-('Abrsh', 'abrsh@email.com', 'Abrsh1234', '+251912345679', 'admin');
+('Admin User', 'admin@holy.et', 'admin123', '+251912345678', 'admin');
