@@ -1,6 +1,7 @@
 import React from 'react';
 import { LayoutDashboard, Users, UtensilsCrossed, ClipboardList, Table2, Calendar, Package, CreditCard, BarChart3, Settings, LogOut, Menu, X } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { useState } from 'react';
 const navItems = [{
   section: 'dashboard',
   label: 'Dashboard',
@@ -70,6 +71,8 @@ const Sidebar = ({
     sidebarOpen,
     setSidebarOpen
   } = useApp();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
   if (!currentUser) return null;
   const visibleNav = navItems.filter(item => item.roles.includes(currentUser.role));
   const roleColor = roleColors[currentUser.role];
@@ -152,12 +155,36 @@ const Sidebar = ({
         <div className="px-2 py-4 border-t" style={{
         borderColor: 'rgba(200,134,42,0.15)'
       }}>
-          <button onClick={logout} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/10 transition-all opacity-70 hover:opacity-100">
+          <button onClick={() => setShowLogoutConfirm(true)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/10 transition-all opacity-70 hover:opacity-100">
             <LogOut size={18} />
             {sidebarOpen && <span>Logout</span>}
           </button>
         </div>
       </aside>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}>
+          <div className="w-full max-w-sm rounded-2xl p-6 shadow-2xl" style={{ background: 'white' }}>
+            <h3 className="text-xl font-bold mb-2" style={{ color: '#2C1810', fontFamily: "'Playfair Display', serif" }}>
+              Confirm Logout
+            </h3>
+            <p className="text-sm mb-6" style={{ color: '#8B6E52' }}>
+              Are you sure you want to log out of your session?
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setShowLogoutConfirm(false)} className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all hover:bg-gray-50"
+                style={{ border: '1px solid #E8D5C0', color: '#6B4F3A' }}>
+                Cancel
+              </button>
+              <button onClick={() => { setShowLogoutConfirm(false); logout(); }} className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90 text-white"
+                style={{ background: '#DC2626' }}>
+                Yes, Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>;
 };
 export default Sidebar;
