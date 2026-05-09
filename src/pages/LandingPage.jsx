@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, Clock, Phone, Star, ChevronDown, Utensils, Coffee, Users, Award } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-const heroImages = ['https://images.pexels.com/photos/17294717/pexels-photo-17294717.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=900&w=1600', 'https://images.pexels.com/photos/36363479/pexels-photo-36363479.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=900&w=1600', 'https://images.pexels.com/photos/5504607/pexels-photo-5504607.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=900&w=1600'];
+const heroImages = ['../../assets/picc.jpg', '../../assets/doro.webp','../../assets/drinks.webp','../../assets/pizza.jpeg','../../assets/drinks2.webp','../../assets/beyaynet.webp'];
 const LandingPage = ({
   onLoginClick
 }) => {
