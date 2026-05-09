@@ -19,7 +19,7 @@ export const AppProvider = ({
     // Fetch all initial data from the backend API
     const fetchData = async () => {
       try {
-        const [tables, menu, categories, orders, reservations, ingredients, payments, users] = await Promise.all([fetch('${import.meta.env.VITE_API_URL}/api/tables').then(res => res.json()), fetch('${import.meta.env.VITE_API_URL}/api/menu').then(res => res.json()), fetch('${import.meta.env.VITE_API_URL}/api/menu-categories').then(res => res.json()), fetch('${import.meta.env.VITE_API_URL}/api/orders').then(res => res.json()), fetch('${import.meta.env.VITE_API_URL}/api/reservations').then(res => res.json()), fetch('${import.meta.env.VITE_API_URL}/api/ingredients').then(res => res.json()), fetch('${import.meta.env.VITE_API_URL}/api/payments').then(res => res.json()), fetch('${import.meta.env.VITE_API_URL}/api/users').then(res => res.json())]);
+        const [tables, menu, categories, orders, reservations, ingredients, payments, users] = await Promise.all([fetch('http://localhost:3001/api/tables').then(res => res.json()), fetch('http://localhost:3001/api/menu').then(res => res.json()), fetch('http://localhost:3001/api/menu-categories').then(res => res.json()), fetch('http://localhost:3001/api/orders').then(res => res.json()), fetch('http://localhost:3001/api/reservations').then(res => res.json()), fetch('http://localhost:3001/api/ingredients').then(res => res.json()), fetch('http://localhost:3001/api/payments').then(res => res.json()), fetch('http://localhost:3001/api/users').then(res => res.json())]);
 
         // Safety checks since the DB might return errors or objects if something fails
         if (Array.isArray(tables)) setTableList(tables);
@@ -38,7 +38,7 @@ export const AppProvider = ({
   }, []);
   const login = async (email, password) => {
     try {
-      const response = await fetch('${import.meta.env.VITE_API_URL}/api/login', {
+      const response = await fetch('http://localhost:3001/api/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -60,7 +60,7 @@ export const AppProvider = ({
   };
   const signup = async (name, email, password, phone) => {
     try {
-      const response = await fetch('${import.meta.env.VITE_API_URL}/api/signup', {
+      const response = await fetch('http://localhost:3001/api/signup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

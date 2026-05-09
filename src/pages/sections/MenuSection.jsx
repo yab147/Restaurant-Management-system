@@ -37,7 +37,7 @@ const MenuSection = () => {
     const item = menuItems.find(i => i.itemId === itemId);
     if (!item) return;
     try {
-      await fetch(`${import.meta.env.VITE_API_URL}/api/menu/${itemId}`, {
+      await fetch(`http://localhost:3001/api/menu/${itemId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -58,7 +58,7 @@ const MenuSection = () => {
   const handleDelete = async itemId => {
     if (confirm('Delete this menu item?')) {
       try {
-        await fetch(`${import.meta.env.VITE_API_URL}/api/menu/${itemId}`, {
+        await fetch(`http://localhost:3001/api/menu/${itemId}`, {
           method: 'DELETE'
         });
         setMenuItems(prev => prev.filter(i => i.itemId !== itemId));
@@ -84,7 +84,7 @@ const MenuSection = () => {
     if (!form.name || !form.price) return;
     try {
       if (editItem) {
-        await fetch(`${import.meta.env.VITE_API_URL}/api/menu/${editItem.itemId}`, {
+        await fetch(`http://localhost:3001/api/menu/${editItem.itemId}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json'
@@ -106,7 +106,7 @@ const MenuSection = () => {
           image: form.image
         } : i));
       } else {
-        const response = await fetch('${import.meta.env.VITE_API_URL}/api/menu', {
+        const response = await fetch('http://localhost:3001/api/menu', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -462,7 +462,7 @@ const MenuSection = () => {
           <button onClick={async () => {
             if (!categoryForm.name) return;
             try {
-              const res = await fetch('${import.meta.env.VITE_API_URL}/api/menu-categories', {
+              const res = await fetch('http://localhost:3001/api/menu-categories', {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json'

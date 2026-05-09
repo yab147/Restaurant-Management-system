@@ -66,7 +66,7 @@ const OrdersSection = () => {
   });
   const updateStatus = async (orderId, newStatus) => {
     try {
-      await fetch(`${import.meta.env.VITE_API_URL}/api/orders/${orderId}/status`, {
+      await fetch(`http://localhost:3001/api/orders/${orderId}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -116,7 +116,7 @@ const OrdersSection = () => {
     const total = items.reduce((s, i) => s + i.subTotal, 0);
     const table = tables.find(t => t.tableId === Number(newOrderForm.tableId));
     try {
-      const response = await fetch('${import.meta.env.VITE_API_URL}/api/orders', {
+      const response = await fetch('http://localhost:3001/api/orders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
