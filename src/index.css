@@ -1,1 +1,55 @@
-@import "tailwindcss";
+:root {
+  /* Primary Palette */
+  --primary-gold: #C8862A;
+  --primary-brown: #8B3A0F;
+  --primary-gradient: linear-gradient(135deg, #C8862A, #8B3A0F);
+
+  /* Dark Backgrounds */
+  --bg-dark-deep: #0D0804;
+  --bg-dark: #1A1008;
+  --bg-dark-accent: #2C1810;
+  --bg-dark-transparent: rgba(26, 16, 8, 0.85);
+
+  /* Light Backgrounds */
+  --bg-light-cream: #FDF6EE;
+  --bg-light-almond: #FAF0E6;
+  --bg-light-sand: #F5E6D3;
+  --bg-light-tan: #E8CBA8;
+  --bg-light-nude: #E8D5C0;
+
+  /* Text Colors */
+  --text-white: #FFF8F0;
+  --text-gold-light: #D4B896;
+  --text-gold-muted: #B8A08A;
+  --text-brown-muted: #8B6E52;
+  --text-brown-deep: #6B4F3A;
+  --text-brown-accent: #B0926A;
+  --text-footer: #5A3E2B;
+
+  /* Semantic Colors */
+  --success: #059669;
+  --success-bg: #ECFDF5;
+  --warning: #D97706;
+  --warning-bg: #FFFBEB;
+  --error: #DC2626;
+  --error-bg: #FEF2F2;
+  --info: #0369A1;
+  --info-bg: #EFF6FF;
+
+  /* Ethiopian Flag Colors */
+
+  --ethiopia-green: #078930;
+  --ethiopia-yellow: #FCDD09;
+  --ethiopia-red: #DA121A;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Playfair Display', serif;
+}

@@ -15,13 +15,28 @@ export const AppProvider = ({
   const [salesDataList, setSalesDataList] = useState([]);
   const [topItemsList, setTopItemsList] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  // Restore persisted auth state on mount and fetch initial data
   useEffect(() => {
+    const storedUser = localStorage.getItem('currentUser');
+    const storedToken = localStorage.getItem('authToken');
+    if (storedUser) {
+      try {
+        setCurrentUser(JSON.parse(storedUser));
+      } catch (e) {
+        console.warn('Failed to parse stored user:', e);
+        localStorage.removeItem('currentUser');
+      }
+    }
+
     // Fetch all initial data from the backend API
     const fetchData = async () => {
       try {
-        const [tables, menu, categories, orders, reservations, ingredients, payments, users] = await Promise.all([fetch('http://localhost:3001/api/tables').then(res => res.json()), fetch('http://localhost:3001/api/menu').then(res => res.json()), fetch('http://localhost:3001/api/menu-categories').then(res => res.json()), fetch('http://localhost:3001/api/orders').then(res => res.json()), fetch('http://localhost:3001/api/reservations').then(res => res.json()), fetch('http://localhost:3001/api/ingredients').then(res => res.json()), fetch('http://localhost:3001/api/payments').then(res => res.json()), fetch('http://localhost:3001/api/users').then(res => res.json())]);
+        const headers = storedToken ? { Authorization: `Bearer ${storedToken}` } : {};
+        const endpoints = ['/api/tables', '/api/menu', '/api/menu-categories', '/api/orders', '/api/reservations', '/api/ingredients', '/api/payments', '/api/users'];
+        const base = 'http://localhost:3001';
+        const results = await Promise.all(endpoints.map(ep => fetch(base + ep, { headers }).then(res => res.json()).catch(err => { console.error('Fetch error', ep, err); return null; })));
+        const [tables, menu, categories, orders, reservations, ingredients, payments, users] = results;
 
-        // Safety checks since the DB might return errors or objects if something fails
         if (Array.isArray(tables)) setTableList(tables);
         if (Array.isArray(menu)) setMenuItemList(menu);
         if (Array.isArray(categories)) setMenuCategoryList(categories);
@@ -51,6 +66,13 @@ export const AppProvider = ({
       const data = await response.json();
       if (data.success && data.user) {
         setCurrentUser(data.user);
+        // persist user + optional token
+        try {
+          localStorage.setItem('currentUser', JSON.stringify(data.user));
+          if (data.token) localStorage.setItem('authToken', data.token);
+        } catch (e) {
+          console.warn('Failed to persist auth data:', e);
+        }
         return data.user;
       }
     } catch (error) {
@@ -81,7 +103,23 @@ export const AppProvider = ({
   };
   const logout = () => {
     setCurrentUser(null);
+    try {
+      localStorage.removeItem('currentUser');
+      localStorage.removeItem('authToken');
+    } catch (e) {
+      console.warn('Error clearing local storage on logout', e);
+    }
   };
+
+  // Keep localStorage in sync if currentUser changes elsewhere
+  useEffect(() => {
+    try {
+      if (currentUser) localStorage.setItem('currentUser', JSON.stringify(currentUser));
+      else localStorage.removeItem('currentUser');
+    } catch (e) {
+      console.warn('Failed to sync currentUser to localStorage:', e);
+    }
+  }, [currentUser]);
   return <AppContext.Provider value={{
     currentUser,
     login,

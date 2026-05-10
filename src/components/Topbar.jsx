@@ -1,6 +1,8 @@
 import React from 'react';
+import { useLocation } from 'react-router-dom';
 import { Menu, Bell, Search } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+
 const sectionTitles = {
   dashboard: 'Dashboard',
   menu: 'Menu Management',
@@ -13,85 +15,74 @@ const sectionTitles = {
   users: 'User Management',
   settings: 'Settings'
 };
+
 const roleColors = {
   admin: '#7C3AED',
   manager: '#0369A1',
   waiter: '#059669',
   chef: '#D97706',
   cashier: '#DC2626',
-  customer: '#C8862A'
+  customer: 'var(--primary-gold)'
 };
-const Topbar = ({
-  activeSection
-}) => {
-  const {
-    currentUser,
-    sidebarOpen,
-    setSidebarOpen
-  } = useApp();
+
+const Topbar = () => {
+  const { currentUser, sidebarOpen, setSidebarOpen } = useApp();
+  const location = useLocation();
+
   if (!currentUser) return null;
-  const roleColor = roleColors[currentUser.role];
-  return <header className="h-16 flex items-center justify-between px-6 border-b sticky top-0 z-20" style={{
-    background: '#FDF6EE',
-    borderColor: '#E8D5C0'
-  }}>
+
+  const path = location.pathname.split('/').pop() || 'dashboard';
+  const activeTitle = sectionTitles[path] || path;
+  const roleColor = roleColors[currentUser.role] || 'var(--primary-gold)';
+
+  return (
+    <header className="h-16 flex items-center justify-between px-6 border-b sticky top-0 z-20" style={{
+      background: 'var(--bg-light-cream)',
+      borderColor: 'var(--bg-light-nude)'
+    }}>
       <div className="flex items-center gap-4">
-        <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 rounded-lg hover:bg-stone-100 transition-colors" style={{
-        color: '#6B4F3A'
-      }}>
+        <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 rounded-lg hover:bg-stone-100 transition-colors" style={{ color: 'var(--text-brown-deep)' }}>
           <Menu size={20} />
         </button>
         <div>
           <h2 className="font-bold text-lg" style={{
-          color: '#2C1810',
-          fontFamily: "'Playfair Display', serif"
-        }}>
-            {sectionTitles[activeSection] || activeSection}
+            color: 'var(--bg-dark-accent)',
+            fontFamily: "'Playfair Display', serif"
+          }}>
+            {activeTitle}
           </h2>
-          <p className="text-xs" style={{
-          color: '#8B6E52'
-        }}>Holy Restaurant · Dire Dawa, Ethiopia</p>
+          <p className="text-xs" style={{ color: 'var(--text-brown-muted)' }}>Holy Restaurant · Dire Dawa, Ethiopia</p>
         </div>
       </div>
 
       <div className="flex items-center gap-3">
         <div className="hidden md:flex items-center gap-2 px-3 py-2 rounded-xl" style={{
-        background: '#F0E8DE',
-        border: '1px solid #E8D5C0'
-      }}>
-          <Search size={14} style={{
-          color: '#8B6E52'
-        }} />
-          <input placeholder="Search..." className="bg-transparent text-sm outline-none w-40" style={{
-          color: '#2C1810'
-        }} />
+          background: '#F0E8DE',
+          border: '1px solid var(--bg-light-nude)'
+        }}>
+          <Search size={14} style={{ color: 'var(--text-brown-muted)' }} />
+          <input placeholder="Search..." className="bg-transparent text-sm outline-none w-40" style={{ color: 'var(--bg-dark-accent)' }} />
         </div>
 
-        <button className="relative p-2 rounded-xl hover:bg-stone-100 transition-colors" style={{
-        color: '#6B4F3A'
-      }}>
+        <button className="relative p-2 rounded-xl hover:bg-stone-100 transition-colors" style={{ color: 'var(--text-brown-deep)' }}>
           <Bell size={20} />
-          <span className="absolute top-1 right-1 w-2 h-2 rounded-full" style={{
-          background: '#DC2626'
-        }} />
+          <span className="absolute top-1 right-1 w-2 h-2 rounded-full" style={{ background: '#DC2626' }} />
         </button>
 
         <div className="flex items-center gap-2">
           <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-white text-xs shadow" style={{
-          background: `linear-gradient(135deg, ${roleColor}, ${roleColor}88)`
-        }}>
+            background: `linear-gradient(135deg, ${roleColor}, ${roleColor}88)`
+          }}>
             {currentUser.name.split(' ').map(n => n[0]).join('').toUpperCase()}
           </div>
           <div className="hidden md:block">
-            <p className="text-xs font-semibold" style={{
-            color: '#2C1810'
-          }}>{currentUser.name}</p>
-            <p className="text-xs capitalize" style={{
-            color: roleColor
-          }}>{currentUser.role}</p>
+            <p className="text-xs font-semibold" style={{ color: 'var(--bg-dark-accent)' }}>{currentUser.name}</p>
+            <p className="text-xs capitalize" style={{ color: roleColor }}>{currentUser.role}</p>
           </div>
         </div>
       </div>
-    </header>;
+    </header>
+  );
 };
+
 export default Topbar;
