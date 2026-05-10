@@ -37,7 +37,7 @@ const About = () => {
 
         <div className="relative">
           <div className="rounded-3xl overflow-hidden shadow-2xl h-96">
-            <img src="../../assets/chef.webp" alt="Chef cooking" className="w-full h-full object-cover" />
+            <img src="../../../assets/chef.webp" alt="Chef cooking" className="w-full h-full object-cover" />
           </div>
           <div className="absolute -bottom-6 -left-6 rounded-2xl p-5 shadow-xl" style={{
             background: 'var(--primary-gradient)',

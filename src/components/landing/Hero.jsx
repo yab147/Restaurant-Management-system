@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 
 const heroImages = [
-  '../../assets/picc.jpg', 
-  '../../assets/dorowot.jpg',
-  '../../assets/drinks.webp',
-  '../../assets/pizza.jpeg',
-  '../../assets/drinks2.webp',
-  '../../assets/beyaynet.webp',
-  '../../assets/eggslice.webp'
+  '../../../assets/picc.jpg', 
+  '../../../assets/dorowot.jpg',
+  '../../../assets/drinks.webp',
+  '../../../assets/pizza.jpeg',
+  '../../../assets/drinks2.webp',
+  '../../../assets/beyaynet.webp',
+  '../../../assets/eggslice.webp'
 ];
 
 const Hero = () => {

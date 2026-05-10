@@ -27,7 +27,7 @@ const CustomerDashboard = () => {
         ].map((item, i) => (
           <button 
             key={i} 
-            onClick={() => navigate(item.path)} 
+            onClick={() => navigate(`/dashboard/${item.path}`)} 
             className="p-5 rounded-2xl text-center transition-all hover:scale-105 shadow-sm" 
             style={{ background: item.bg }}
           >

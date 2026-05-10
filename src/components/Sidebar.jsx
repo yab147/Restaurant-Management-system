@@ -99,7 +99,7 @@ const Sidebar = () => {
               return (
                 <NavLink 
                   key={item.section} 
-                  to={item.section} 
+                  to={item.section === '' ? '/dashboard' : `/dashboard/${item.section}`} 
                   end={item.section === ''}
                   onClick={() => {
                     if (window.innerWidth < 1024) setSidebarOpen(false);

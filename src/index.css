@@ -1,4 +1,7 @@
+@import "tailwindcss";
+
 :root {
+
   /* Primary Palette */
   --primary-gold: #C8862A;
   --primary-brown: #8B3A0F;
