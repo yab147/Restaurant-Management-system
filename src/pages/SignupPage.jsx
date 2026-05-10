@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff, ArrowLeft, LogIn } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, UserPlus } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 
-const LoginPage = () => {
-  const { login } = useApp();
+const SignupPage = () => {
+  const { login, signup } = useApp();
   const navigate = useNavigate();
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -18,11 +20,12 @@ const LoginPage = () => {
     setLoading(true);
     await new Promise(r => setTimeout(r, 600));
 
-    const user = await login(email, password);
-    if (user) {
-      navigate('/dashboard');
+    const success = await signup(name, email, password, phone);
+    if (success) {
+      const user = await login(email, password);
+      if (user) navigate('/dashboard');
     } else {
-      setError('Invalid email or password. Please try again.');
+      setError('Signup failed. Email might already exist.');
     }
     setLoading(false);
   };
@@ -49,10 +52,10 @@ const LoginPage = () => {
             </div>
           </div>
           <h2 className="text-4xl font-bold text-white mb-4" style={{ fontFamily: "'Playfair Display', serif" }}>
-            Welcome Back,<br /><span style={{ color: 'var(--primary-gold)' }}>Team!</span>
+            Join the <span style={{ color: 'var(--primary-gold)' }}>Holy</span> Family
           </h2>
           <p className="mb-10 leading-relaxed" style={{ color: 'var(--text-brown-muted)' }}>
-            Manage your restaurant operations seamlessly. From table service to kitchen orders, inventory to reports — all in one place.
+            Create an account to order online, make reservations, and earn rewards.
           </p>
 
           <div className="flex gap-2 mt-12">
@@ -75,14 +78,50 @@ const LoginPage = () => {
               fontFamily: "'Playfair Display', serif",
               color: 'var(--bg-dark-accent)'
             }}>
-              Sign In
+              Create Account
             </h2>
             <p style={{ color: 'var(--text-brown-muted)' }} className="text-sm">
-              Access your Holy Restaurant dashboard
+              Sign up to order online and more
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="block text-xs font-semibold mb-2 tracking-wider uppercase" style={{ color: 'var(--text-brown-deep)' }}>Full Name</label>
+              <input 
+                type="text" 
+                value={name} 
+                onChange={e => setName(e.target.value)} 
+                placeholder="John Doe" 
+                required 
+                className="w-full px-4 py-3.5 rounded-xl text-sm outline-none transition-all" 
+                style={{
+                  background: 'white',
+                  border: '2px solid var(--bg-light-nude)',
+                  color: 'var(--bg-dark-accent)'
+                }} 
+                onFocus={e => e.target.style.borderColor = 'var(--primary-gold)'} 
+                onBlur={e => e.target.style.borderColor = 'var(--bg-light-nude)'} 
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold mb-2 tracking-wider uppercase" style={{ color: 'var(--text-brown-deep)' }}>Phone Number</label>
+              <input 
+                type="tel" 
+                value={phone} 
+                onChange={e => setPhone(e.target.value)} 
+                placeholder="+251 900 0000" 
+                required 
+                className="w-full px-4 py-3.5 rounded-xl text-sm outline-none transition-all" 
+                style={{
+                  background: 'white',
+                  border: '2px solid var(--bg-light-nude)',
+                  color: 'var(--bg-dark-accent)'
+                }} 
+                onFocus={e => e.target.style.borderColor = 'var(--primary-gold)'} 
+                onBlur={e => e.target.style.borderColor = 'var(--bg-light-nude)'} 
+              />
+            </div>
             <div>
               <label className="block text-xs font-semibold mb-2 tracking-wider uppercase" style={{ color: 'var(--text-brown-deep)' }}>Email Address</label>
               <input 
@@ -148,16 +187,16 @@ const LoginPage = () => {
               {loading ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : (
-                <><LogIn size={18} /> Sign In</>
+                <><UserPlus size={18} /> Create Account</>
               )}
             </button>
           </form>
 
           <div className="mt-6 text-center">
             <p className="text-sm" style={{ color: 'var(--text-brown-muted)' }}>
-              Don't have an account?{" "}
-              <Link to="/signup" className="font-bold hover:underline transition-all" style={{ color: 'var(--primary-gold)' }}>
-                Sign Up
+              Already have an account?{" "}
+              <Link to="/login" className="font-bold hover:underline transition-all" style={{ color: 'var(--primary-gold)' }}>
+                Sign In
               </Link>
             </p>
           </div>
@@ -173,4 +212,4 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage;
+export default SignupPage;

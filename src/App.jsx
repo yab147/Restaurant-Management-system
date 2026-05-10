@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AppProvider, useApp } from './context/AppContext';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
+import SignupPage from './pages/SignupPage';
 import Dashboard from './pages/Dashboard';
 
 const ProtectedRoute = ({ children }) => {
@@ -34,6 +35,14 @@ const AppContent = () => {
         } 
       />
       <Route 
+        path="/signup" 
+        element={
+          <PublicRoute>
+            <SignupPage />
+          </PublicRoute>
+        } 
+      />
+      <Route 
         path="/dashboard/*" 
         element={
           <ProtectedRoute>
@@ -41,6 +50,7 @@ const AppContent = () => {
           </ProtectedRoute>
         } 
       />
+
       {/* Redirect unknown routes to landing */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
