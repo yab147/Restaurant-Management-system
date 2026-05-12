@@ -248,7 +248,7 @@ const OrdersSection = () => {
           <div className="flex flex-wrap gap-1 mb-3">
             {order.items.map(item => <span key={item.orderItemId} className="text-xs px-2 py-0.5 rounded-full" style={{
               background: '#F5E6D3',
-              color: '#8B6E52'
+              color: 'selectedOrder#8B6E52'
             }}>
               {item.quantity}× {item.itemName}
             </span>)}

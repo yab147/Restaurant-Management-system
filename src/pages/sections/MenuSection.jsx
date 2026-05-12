@@ -227,7 +227,7 @@ const MenuSection = () => {
     </div>
 
     {/* Items Grid */}
-    <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       {filtered.map(item => {
         const cat = menuCategories.find(c => c.categoryId === item.categoryId);
         return <div key={item.itemId} className={`rounded-2xl overflow-hidden shadow-sm transition-all hover:shadow-md ${!item.availability ? 'opacity-60' : ''}`} style={{
@@ -249,7 +249,7 @@ const MenuSection = () => {
               <span className="text-white text-xs font-bold px-3 py-1 rounded-full bg-black/60">Unavailable</span>
             </div>}
           </div>
-          <div className="p-4">
+          <div className="p-4 h-25">
             <h3 className="font-bold text-sm mb-1" style={{
               color: '#2C1810',
               fontFamily: "'Playfair Display', serif"
@@ -283,6 +283,90 @@ const MenuSection = () => {
               }}><Trash2 size={14} /></button>
             </div>}
           </div>
+        </div>;
+      })}
+    </div>
+        {/* Items Grid for small device */}
+    <div className="hidden sm:grid sm:grid-cols-2 md:hidden gap-4">
+      {filtered.map(item => {
+        const cat = menuCategories.find(c => c.categoryId === item.categoryId);
+        return <div key={item.itemId} className={`rounded-2xl overflow-hidden shadow-sm transition-all hover:shadow-md ${!item.availability ? 'opacity-60' : ''}`} style={{
+          background: 'white',
+          border: '1px solid #F0E8DE'
+        }}>
+          <div className={`h-36 flex items-center justify-center text-5xl relative ${item.image ? 'bg-cover bg-center' : ''}`} style={{
+            background: item.image ? `url(${item.image}) center/cover no-repeat` : 'linear-gradient(135deg, #F5E6D3, #E8CBA8)'
+          }}>
+            {!item.image && (cat?.icon || '🍽️')}
+            {item.isPopular && <span className="absolute top-2 left-2 flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-semibold" style={{
+              background: '#C8862A',
+              color: 'white'
+            }}>
+              <Star size={10} /> Popular
+            </span>}
+            {item.isSpicy && <span className="absolute top-2 right-2 text-sm">🌶️</span>}
+            {!item.availability && <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+              <span className="text-white text-xs font-bold px-3 py-1 rounded-full bg-black/60">Unavailable</span>
+            </div>}
+          </div>
+          <div className="p-4 h-25">
+            <h3 className="font-bold text-sm mb-1" style={{
+              color: '#2C1810',
+              fontFamily: "'Playfair Display', serif"
+            }}>{item.name}</h3>
+            <p className="text-xs mb-3 line-clamp-2" style={{
+              color: '#8B6E52'
+            }}>{item.description}</p>
+            <div className="flex items-center justify-between mb-3">
+              <span className="font-bold" style={{
+                color: '#C8862A'
+              }}>ETB {item.price}</span>
+              {item.prepTime && <span className="text-xs" style={{
+                color: '#B0926A'
+              }}>⏱ {item.prepTime}m</span>}
+            </div>
+            {canEdit && <div className="flex items-center gap-2">
+              <button onClick={() => handleToggle(item.itemId)} className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all`} style={item.availability ? {
+                background: '#ECFDF5',
+                color: '#059669'
+              } : {
+                background: '#FEE2E2',
+                color: '#DC2626'
+              }}>
+                {item.availability ? '✓ Available' : '✗ Unavailable'}
+              </button>
+              <button onClick={() => handleEdit(item)} className="p-1.5 rounded-lg transition-all hover:bg-blue-50" style={{
+                color: '#0369A1'
+              }}><Edit2 size={14} /></button>
+              <button onClick={() => handleDelete(item.itemId)} className="p-1.5 rounded-lg transition-all hover:bg-red-50" style={{
+                color: '#DC2626'
+              }}><Trash2 size={14} /></button>
+            </div>}
+          </div>
+        </div>;
+      })}
+    </div>
+    <div className='sm:hidden'>
+          {filtered.map(item => {
+          const cat = menuCategories.find(c => c.categoryId === item.categoryId);
+          return <div key={item.itemId} className={`rounded-2xl overflow-hidden shadow-sm transition-all hover:shadow-md ${!item.availability ? 'opacity-60' : ''}`} style={{
+            background: 'white',
+            border: '1px solid #F0E8DE'
+          }}>
+            <div className='grid grid-cols-3 bg-white rounded-2xl shadow-lg shadow-gray-300 h-15'>
+                <div className=' flex items-center justify-start text-5xl relative'
+                  >
+                    <img src={item.image} alt={item.name} className='h-20 w-20 rounded-lg' />
+                    
+                </div>
+                <div className='flex items-center justify-between px-4 text-[#C8862A] font-bold'>
+                  <span>{item.name}</span>
+                </div>
+                 <div className='flex items-center justify-end px-4 text-[#C8862A] font-bold'>
+                    <span>ETB {item.price}</span>
+                 </div>
+            </div>
+           
         </div>;
       })}
     </div>

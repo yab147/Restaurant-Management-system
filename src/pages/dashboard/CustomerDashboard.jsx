@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
-
+import { LucideCalendar } from 'lucide-react';
 const CustomerDashboard = () => {
   const { menuItems, orders, currentUser } = useApp();
   const navigate = useNavigate();
@@ -18,7 +18,7 @@ const CustomerDashboard = () => {
         </h2>
         <p style={{ color: 'var(--text-brown-muted)' }}>Explore our menu, make reservations, or check your orders</p>
       </div>
-
+{/* 
       <div className="grid grid-cols-3 gap-4">
         {[
           { label: 'Browse Menu', icon: '🍽️', path: 'menu', color: 'var(--primary-gold)', bg: '#FEF9EE' },
@@ -35,7 +35,7 @@ const CustomerDashboard = () => {
             <div className="font-semibold text-sm" style={{ color: item.color }}>{item.label}</div>
           </button>
         ))}
-      </div>
+      </div> */}
 
       <h3 className="font-bold text-lg" style={{
         color: 'var(--bg-dark-accent)',
@@ -57,7 +57,7 @@ const CustomerDashboard = () => {
               <h4 className="font-bold text-sm" style={{
                 color: 'var(--bg-dark-accent)',
                 fontFamily: "'Playfair Display', serif"
-              }}>{item.name}</h4>
+              }}>{}</h4>
               <p className="text-xs mb-2 line-clamp-1" style={{ color: 'var(--text-brown-muted)' }}>{item.description}</p>
               <div className="flex justify-between items-center">
                 <span className="font-bold" style={{ color: 'var(--primary-gold)' }}>ETB {item.price}</span>
