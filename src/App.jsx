@@ -1,24 +1,45 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AppProvider, useApp } from './context/AppContext';
+import { AppProvider } from './context/AppContext';
+import { AuthProvider, useAuth } from './shared/context/AuthContext';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
-import Dashboard from './pages/Dashboard';
 
-const ProtectedRoute = ({ children }) => {
-  const { currentUser } = useApp();
+import ManagerModule from './modules/manager/manager';
+import CashierModule from './modules/cashier/cashier';
+import AdminModule from './modules/admin/admin';
+import WaiterModule from './modules/waiter/waiter';
+import ChefModule from './modules/chef/chef';
+import CustomerModule from './modules/customer/customer';
+
+const ProtectedRoute = ({ children, allowedRoles }) => {
+  const { currentUser } = useAuth();
+  
   if (!currentUser) {
     return <Navigate to="/login" replace />;
   }
+
+  // If no specific roles are required, just let them in (this is a fallback)
+  if (!allowedRoles) {
+    return children;
+  }
+
+  if (!allowedRoles.includes(currentUser.role)) {
+    // Redirect to their respective dashboard
+    return <Navigate to={`/${currentUser.role}`} replace />;
+  }
+
   return children;
 };
 
 const PublicRoute = ({ children }) => {
-  const { currentUser } = useApp();
+  const { currentUser } = useAuth();
+  
   if (currentUser) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={`/${currentUser.role}`} replace />;
   }
+  
   return children;
 };
 
@@ -42,11 +63,53 @@ const AppContent = () => {
           </PublicRoute>
         } 
       />
+      
+      {/* Role-based Modules */}
       <Route 
-        path="/dashboard/*" 
+        path="/admin/*" 
         element={
-          <ProtectedRoute>
-            <Dashboard />
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminModule />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/manager/*" 
+        element={
+          <ProtectedRoute allowedRoles={['manager', 'admin']}>
+            <ManagerModule />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/cashier/*" 
+        element={
+          <ProtectedRoute allowedRoles={['cashier', 'admin']}>
+            <CashierModule />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/waiter/*" 
+        element={
+          <ProtectedRoute allowedRoles={['waiter', 'admin']}>
+            <WaiterModule />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/chef/*" 
+        element={
+          <ProtectedRoute allowedRoles={['chef', 'admin']}>
+            <ChefModule />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/customer/*" 
+        element={
+          <ProtectedRoute allowedRoles={['customer']}>
+            <CustomerModule />
           </ProtectedRoute>
         } 
       />
@@ -59,11 +122,13 @@ const AppContent = () => {
 
 const App = () => {
   return (
-    <AppProvider>
-      <Router>
-        <AppContent />
-      </Router>
-    </AppProvider>
+    <AuthProvider>
+      <AppProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </AppProvider>
+    </AuthProvider>
   );
 };
 

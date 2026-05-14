@@ -2,6 +2,7 @@ import express from 'express';
 import mysql from 'mysql2/promise';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import jwt from 'jsonwebtoken';
 
 dotenv.config();
 
@@ -42,13 +43,28 @@ app.post('/api/login', async (req, res) => {
   try {
     const rows = await queryDB('SELECT * FROM users WHERE email = ? AND password = ?', [email, password]);
     if (rows.length > 0) {
-      res.json({ success: true, user: rows[0] });
+      const user = rows[0];
+      const accessToken = jwt.sign({ id: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET || 'secret123', { expiresIn: '1h' });
+      const refreshToken = jwt.sign({ id: user.id, email: user.email, role: user.role }, process.env.JWT_REFRESH_SECRET || 'refreshSecret123', { expiresIn: '7d' });
+      res.json({ success: true, user, accessToken, refreshToken });
     } else {
       res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
   } catch (error) {
     console.error('Database error:', error);
     res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+app.post('/api/refresh', (req, res) => {
+  const { token } = req.body;
+  if (!token) return res.status(401).json({ success: false, message: 'Refresh token required' });
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET || 'refreshSecret123');
+    const accessToken = jwt.sign({ id: decoded.id, email: decoded.email, role: decoded.role }, process.env.JWT_SECRET || 'secret123', { expiresIn: '1h' });
+    res.json({ success: true, accessToken });
+  } catch (err) {
+    res.status(403).json({ success: false, message: 'Invalid refresh token' });
   }
 });
 

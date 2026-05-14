@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, ArrowLeft, LogIn } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useApp } from '../context/AppContext';
+import { useAuth } from '../shared/context/AuthContext';
 
 const LoginPage = () => {
-  const { login } = useApp();
+  const { login } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -20,7 +20,12 @@ const LoginPage = () => {
 
     const user = await login(email, password);
     if (user) {
-      navigate('/dashboard');
+      if (user.role === 'manager' || user.role === 'admin') navigate('/manager');
+      else if (user.role === 'cashier') navigate('/cashier');
+      else if (user.role === 'waiter') navigate('/waiter');
+      else if (user.role === 'chef') navigate('/chef');
+      else if (user.role === 'customer') navigate('/customer');
+      else navigate('/');
     } else {
       setError('Invalid email or password. Please try again.');
     }
@@ -85,40 +90,40 @@ const LoginPage = () => {
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="block text-xs font-semibold mb-2 tracking-wider uppercase" style={{ color: 'var(--text-brown-deep)' }}>Email Address</label>
-              <input 
-                type="email" 
-                value={email} 
-                onChange={e => setEmail(e.target.value)} 
-                placeholder="your@email.com" 
-                required 
-                className="w-full px-4 py-3.5 rounded-xl text-sm outline-none transition-all" 
+              <input
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="your@email.com"
+                required
+                className="w-full px-4 py-3.5 rounded-xl text-sm outline-none transition-all"
                 style={{
                   background: 'white',
                   border: '2px solid var(--bg-light-nude)',
                   color: 'var(--bg-dark-accent)'
-                }} 
-                onFocus={e => e.target.style.borderColor = 'var(--primary-gold)'} 
-                onBlur={e => e.target.style.borderColor = 'var(--bg-light-nude)'} 
+                }}
+                onFocus={e => e.target.style.borderColor = 'var(--primary-gold)'}
+                onBlur={e => e.target.style.borderColor = 'var(--bg-light-nude)'}
               />
             </div>
 
             <div>
               <label className="block text-xs font-semibold mb-2 tracking-wider uppercase" style={{ color: 'var(--text-brown-deep)' }}>Password</label>
               <div className="relative">
-                <input 
-                  type={showPassword ? 'text' : 'password'} 
-                  value={password} 
-                  onChange={e => setPassword(e.target.value)} 
-                  placeholder="••••••••" 
-                  required 
-                  className="w-full px-4 py-3.5 rounded-xl text-sm outline-none transition-all pr-12" 
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  className="w-full px-4 py-3.5 rounded-xl text-sm outline-none transition-all pr-12"
                   style={{
                     background: 'white',
                     border: '2px solid var(--bg-light-nude)',
                     color: 'var(--bg-dark-accent)'
-                  }} 
-                  onFocus={e => e.target.style.borderColor = 'var(--primary-gold)'} 
-                  onBlur={e => e.target.style.borderColor = 'var(--bg-light-nude)'} 
+                  }}
+                  onFocus={e => e.target.style.borderColor = 'var(--primary-gold)'}
+                  onBlur={e => e.target.style.borderColor = 'var(--bg-light-nude)'}
                 />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-brown-muted)' }}>
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -136,10 +141,10 @@ const LoginPage = () => {
               </div>
             )}
 
-            <button 
-              type="submit" 
-              disabled={loading} 
-              className="w-full py-4 rounded-xl font-semibold text-sm tracking-wider flex items-center justify-center gap-2 transition-all hover:scale-105 hover:shadow-xl disabled:opacity-70" 
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-4 rounded-xl font-semibold text-sm tracking-wider flex items-center justify-center gap-2 transition-all hover:scale-105 hover:shadow-xl disabled:opacity-70"
               style={{
                 background: 'var(--primary-gradient)',
                 color: 'white'
