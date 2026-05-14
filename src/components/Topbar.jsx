@@ -70,9 +70,7 @@ const Topbar = () => {
         </button>
 
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-white text-xs shadow" style={{
-            background: `linear-gradient(135deg, ${roleColor}, ${roleColor}88)`
-          }}>
+          <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-white text-xs shadow bg-[#C8862A]">
             {currentUser.name.split(' ').map(n => n[0]).join('').toUpperCase()}
           </div>
           <div className="hidden md:block">

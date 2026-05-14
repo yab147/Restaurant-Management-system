@@ -18,7 +18,7 @@ const CustomerDashboard = () => {
         </h2>
         <p style={{ color: 'var(--text-brown-muted)' }}>Explore our menu, make reservations, or check your orders</p>
       </div>
-
+{/* 
       <div className="grid grid-cols-3 gap-4">
         {[
           { label: 'Browse Menu', icon: '🍽️', path: 'menu', color: 'var(--primary-gold)', bg: '#FEF9EE' },
@@ -35,7 +35,7 @@ const CustomerDashboard = () => {
             <div className="font-semibold text-sm" style={{ color: item.color }}>{item.label}</div>
           </button>
         ))}
-      </div>
+      </div> */}
 
       <h3 className="font-bold text-lg" style={{
         color: 'var(--bg-dark-accent)',
