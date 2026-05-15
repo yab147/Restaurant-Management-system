@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, ArrowLeft, LogIn } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../shared/context/AuthContext';
+import { useAuth } from '../providers/index.jsx';
+import { ROUTES } from '../constants/routes.js';
 
 const LoginPage = () => {
   const { login } = useAuth();
@@ -18,16 +19,11 @@ const LoginPage = () => {
     setLoading(true);
     await new Promise(r => setTimeout(r, 600));
 
-    const user = await login(email, password);
-    if (user) {
-      if (user.role === 'manager' || user.role === 'admin') navigate('/manager');
-      else if (user.role === 'cashier') navigate('/cashier');
-      else if (user.role === 'waiter') navigate('/waiter');
-      else if (user.role === 'chef') navigate('/chef');
-      else if (user.role === 'customer') navigate('/customer');
-      else navigate('/');
+    const result = await login(email, password);
+    if (result.success) {
+      navigate(ROUTES.DASHBOARD);
     } else {
-      setError('Invalid email or password. Please try again.');
+      setError(result.error || 'Invalid email or password. Please try again.');
     }
     setLoading(false);
   };

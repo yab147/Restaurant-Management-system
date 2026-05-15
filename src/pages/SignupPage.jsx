@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, ArrowLeft, UserPlus } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../shared/context/AuthContext';
+import { useAuth } from '../providers/index.jsx';
+import { ROUTES } from '../constants/routes.js';
 import PhoneInput from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
 
@@ -22,19 +23,14 @@ const SignupPage = () => {
     setLoading(true);
     await new Promise(r => setTimeout(r, 600));
 
-    const success = await signup(name, email, password, phone);
-    if (success) {
-      const user = await login(email, password);
-      if (user) {
-        if (user.role === 'manager' || user.role === 'admin') navigate('/manager');
-        else if (user.role === 'cashier') navigate('/cashier');
-        else if (user.role === 'waiter') navigate('/waiter');
-        else if (user.role === 'chef') navigate('/chef');
-        else if (user.role === 'customer') navigate('/customer');
-        else navigate('/');
+    const res = await signup(name, email, password, phone);
+    if (res.success) {
+      const loginRes = await login(email, password);
+      if (loginRes.success) {
+        navigate(ROUTES.DASHBOARD);
       }
     } else {
-      setError('Signup failed. Email might already exist.');
+      setError(res.error || 'Signup failed. Email might already exist.');
     }
     setLoading(false);
   };
