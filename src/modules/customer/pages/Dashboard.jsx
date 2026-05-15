@@ -18,7 +18,7 @@ const CustomerDashboard = () => {
         </h2>
         <p style={{ color: 'var(--text-brown-muted)' }}>Explore our menu, make reservations, or check your orders</p>
       </div>
-{/* 
+      {/* 
       <div className="grid grid-cols-3 gap-4">
         {[
           { label: 'Browse Menu', icon: '🍽️', path: 'menu', color: 'var(--primary-gold)', bg: '#FEF9EE' },

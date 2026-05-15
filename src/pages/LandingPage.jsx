@@ -1,13 +1,13 @@
 import React from 'react';
-import Navbar from '../components/landing/Navbar';
-import Hero from '../components/landing/Hero';
-import StatsStrip from '../components/landing/StatsStrip';
-import About from '../components/landing/About';
-import MenuPreview from '../components/landing/MenuPreview';
-import Experience from '../components/landing/Experience';
-import Testimonials from '../components/landing/Testimonials';
-import Contact from '../components/landing/Contact';
-import Footer from '../components/landing/Footer';
+import Navbar from '../shared/components/landing/Navbar';
+import Hero from '../shared/components/landing/Hero';
+import StatsStrip from '../shared/components/landing/StatsStrip';
+import About from '../shared/components/landing/About';
+import MenuPreview from '../shared/components/landing/MenuPreview';
+import Experience from '../shared/components/landing/Experience';
+import Testimonials from '../shared/components/landing/Testimonials';
+import Contact from '../shared/components/landing/Contact';
+import Footer from '../shared/components/landing/Footer';
 
 const LandingPage = () => {
   return (
