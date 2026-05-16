@@ -1,0 +1,33 @@
+{
+  "name": "restaurant-management-frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.51.16",
+    "axios": "^1.7.7",
+    "clsx": "2.1.1",
+    "immer": "^10.1.1",
+    "lucide-react": "^1.14.0",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "react-hot-toast": "^2.6.0",
+    "react-phone-number-input": "^3.4.16",
+    "react-router-dom": "^7.15.0",
+    "recharts": "^3.8.1",
+    "tailwind-merge": "3.4.0",
+    "zustand": "^4.5.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.1.17",
+    "@vitejs/plugin-react": "5.1.1",
+    "tailwindcss": "4.1.17",
+    "vite": "7.3.2",
+    "vite-plugin-singlefile": "2.3.0"
+  }
+}

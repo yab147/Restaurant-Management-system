@@ -1,39 +1,16 @@
 {
-  "name": "react-vite-tailwind",
+  "name": "restaurant-management-system",
   "private": true,
-  "version": "0.0.0",
-  "type": "module",
+  "version": "1.0.0",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "server": "node server.js"
-  },
-  "dependencies": {
-    "@tanstack/react-query": "^5.51.16",
-    "axios": "^1.7.7",
-    "clsx": "2.1.1",
-    "cors": "^2.8.6",
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "immer": "^10.1.1",
-    "jsonwebtoken": "^9.0.3",
-    "lucide-react": "^1.14.0",
-    "mysql2": "^3.22.3",
-    "react": "19.2.6",
-    "react-dom": "19.2.6",
-    "react-hot-toast": "^2.6.0",
-    "react-phone-number-input": "^3.4.16",
-    "react-router-dom": "^7.15.0",
-    "recharts": "^3.8.1",
-    "tailwind-merge": "3.4.0",
-    "zustand": "^4.5.2"
+    "install:all": "npm install --prefix frontend && npm install --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev:backend": "npm run dev --prefix backend",
+    "start:backend": "npm start --prefix backend",
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "build": "npm run build --prefix frontend"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "4.1.17",
-    "@vitejs/plugin-react": "5.1.1",
-    "tailwindcss": "4.1.17",
-    "vite": "7.3.2",
-    "vite-plugin-singlefile": "2.3.0"
+    "concurrently": "^8.2.2"
   }
 }
