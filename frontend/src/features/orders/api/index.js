@@ -14,6 +14,8 @@ export const fetchOrders = async ({
     sortOrder = 'DESC',
     status,
     tableId,
+    waiterId,
+    unassigned,
     startDate,
     endDate,
 } = {}) => {
@@ -23,8 +25,10 @@ export const fetchOrders = async ({
             size,
             sortBy,
             sortOrder,
-            ...(status && { status }),
+            ...(status && status !== 'all' ? { status } : {}),
             ...(tableId && { tableId }),
+            ...(waiterId !== undefined && waiterId !== null ? { waiterId } : {}),
+            ...(unassigned ? { unassigned } : {}),
             ...(startDate && { startDate }),
             ...(endDate && { endDate }),
         },
@@ -53,6 +57,12 @@ export const updateOrder = async (orderId, payload) => {
 // Update order status
 export const updateOrderStatus = async (orderId, status) => {
     const { data } = await apiClient.put(`/orders/${orderId}/status`, { status });
+    return data;
+};
+
+// Assign order to a waiter
+export const assignOrderToWaiter = async (orderId, payload) => {
+    const { data } = await apiClient.put(`/orders/${orderId}/assign`, payload);
     return data;
 };
 

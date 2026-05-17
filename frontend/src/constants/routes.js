@@ -33,13 +33,14 @@ export const ROUTES = {
   REPORTS:      '/reports',
   USERS:        '/users',
   SETTINGS:     '/settings',
+  WAITER:       '/waiter',
 
   // Role-based redirect targets (used only in auth redirect logic)
   ROLE_DEFAULTS: {
     admin:    '/dashboard',
     manager:  '/dashboard',
     cashier:  '/dashboard',
-    waiter:   '/dashboard',
+    waiter:   '/waiter',
     chef:     '/dashboard',
     customer: '/dashboard',
   },

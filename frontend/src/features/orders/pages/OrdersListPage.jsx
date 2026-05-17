@@ -23,6 +23,7 @@ import { useOrderStore }   from '../store/useOrderStore.js';
 import { useMenuItems }    from '../../menu/hooks/useMenu.js';
 import { useTables }       from '../../tables/hooks/useTables.js';
 import { usePermission }   from '../../../providers/PermissionProvider.jsx';
+import { useAuth }         from '../../../providers/AuthProvider.jsx';
 import { PERMISSIONS }     from '../../../permissions/matrix.js';
 import Badge               from '../../../shared/components/ui/Badge.jsx';
 import Spinner             from '../../../shared/components/ui/Spinner.jsx';
@@ -34,6 +35,7 @@ import {
 
 export default function OrdersListPage() {
   const { hasPermission } = usePermission();
+  const { user } = useAuth();
   const { filters, setFilters, isCreatingOrder, setIsCreatingOrder } = useOrderStore();
 
   // Server state via React Query
@@ -81,9 +83,13 @@ export default function OrdersListPage() {
       return { itemId: oi.itemId, itemName: menu?.name, quantity: oi.qty, unitPrice: menu?.price, subTotal: (menu?.price || 0) * oi.qty };
     });
     const totalAmount = calculateOrderTotal(items.map(i => ({ unitPrice: i.unitPrice, quantity: i.quantity })));
+    const waiterData = user?.role === 'waiter'
+      ? { waiterId: user.userId, waiterName: user.name }
+      : {};
     createOrderMutation.mutate({
       customerName: newForm.customerName, tableId: table?.tableId, tableNumber: table?.number,
       type: newForm.type, totalAmount, notes: newForm.notes, items,
+      ...waiterData,
     }, {
       onSuccess: () => {
         setIsCreatingOrder(false);

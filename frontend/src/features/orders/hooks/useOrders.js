@@ -12,7 +12,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   fetchOrders, fetchOrderById, createOrder,
-  updateOrderStatus, deleteOrder, fetchOrderQueue, fetchOrderStats,
+  updateOrderStatus, deleteOrder, assignOrderToWaiter, fetchOrderQueue, fetchOrderStats,
 } from '../api/index.js';
 import { QUERY_KEYS } from '../../../constants/queryKeys.js';
 
@@ -103,6 +103,15 @@ export function useUpdateOrderStatus() {
     onSettled: () => {
       qc.invalidateQueries({ queryKey: QUERY_KEYS.orders.all() });
     },
+  });
+}
+
+/** Assign order to waiter */
+export function useAssignOrderToWaiter() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ orderId, waiterId, waiterName, status }) => assignOrderToWaiter(orderId, { waiterId, waiterName, status }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: QUERY_KEYS.orders.all() }),
   });
 }
 

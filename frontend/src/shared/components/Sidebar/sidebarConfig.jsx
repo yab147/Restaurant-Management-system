@@ -67,6 +67,15 @@ export const SIDEBAR_NAV = [
     group:       'operations',
   },
   {
+    id:          'waiter-dashboard',
+    label:       'My Station',
+    icon:        <ClipboardList size={18} />,
+    path:        ROUTES.WAITER,
+    permissions: [PERMISSIONS.ORDERS_VIEW],
+    roles:       ['waiter'],
+    group:       'operations',
+  },
+  {
     id:          'tables',
     label:       'Tables',
     icon:        <Table2 size={18} />,

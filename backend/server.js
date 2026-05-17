@@ -153,7 +153,24 @@ app.post('/api/menu-categories', async (req, res) => {
 // Get orders and items
 app.get('/api/orders', async (req, res) => {
   try {
-    const orders = await queryDB('SELECT * FROM orders ORDER BY orderDate DESC');
+    const conditions = [];
+    const params = [];
+
+    if (req.query.status && req.query.status !== 'all') {
+      conditions.push('status = ?');
+      params.push(req.query.status);
+    }
+    if (req.query.waiterId !== undefined && req.query.waiterId !== null && req.query.waiterId !== '') {
+      conditions.push('waiterId = ?');
+      params.push(Number(req.query.waiterId));
+    }
+    if (req.query.unassigned === 'true') {
+      conditions.push('waiterId IS NULL');
+    }
+
+    const sql = `SELECT * FROM orders${conditions.length ? ' WHERE ' + conditions.join(' AND ') : ''} ORDER BY orderDate DESC`;
+    const orders = await queryDB(sql, params);
+
     for (let order of orders) {
       order.items = await queryDB('SELECT * FROM order_items WHERE orderId = ?', [order.orderId]);
     }
@@ -163,15 +180,15 @@ app.get('/api/orders', async (req, res) => {
 
 // Add new order
 app.post('/api/orders', async (req, res) => {
-  const { tableId, tableNumber, customerName, type, items, totalAmount, notes } = req.body;
+  const { tableId, tableNumber, customerName, type, items, totalAmount, notes, waiterId, waiterName } = req.body;
 
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
 
     const [orderResult] = await connection.query(
-      'INSERT INTO orders (tableId, tableNumber, customerName, type, status, orderDate, totalAmount, notes) VALUES (?, ?, ?, ?, ?, NOW(), ?, ?)',
-      [tableId || null, tableNumber || null, customerName, type, 'pending', totalAmount, notes || null]
+      'INSERT INTO orders (tableId, tableNumber, customerName, waiterId, waiterName, type, status, orderDate, totalAmount, notes) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)',
+      [tableId || null, tableNumber || null, customerName, waiterId || null, waiterName || null, type, 'pending', totalAmount, notes || null]
     );
     const orderId = orderResult.insertId;
 
@@ -200,10 +217,103 @@ app.put('/api/orders/:id/status', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Assign order to waiter
+app.put('/api/orders/:id/assign', async (req, res) => {
+  const { waiterId, waiterName, status } = req.body;
+  try {
+    await pool.query(
+      'UPDATE orders SET waiterId=?, waiterName=?, status=COALESCE(?, status) WHERE orderId=?',
+      [waiterId || null, waiterName || null, status || null, req.params.id]
+    );
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // Get reservations
 app.get('/api/reservations', async (req, res) => {
-  try { res.json(await queryDB('SELECT * FROM reservations')); }
+  try {
+    const conditions = [];
+    const params = [];
+
+    if (req.query.status && req.query.status !== 'all') {
+      conditions.push('status = ?');
+      params.push(req.query.status);
+    }
+    if (req.query.search) {
+      conditions.push('customerName LIKE ?');
+      params.push(`%${req.query.search}%`);
+    }
+    if (req.query.date) {
+      // filter by date portion of dateTime
+      conditions.push('DATE(dateTime) = ?');
+      params.push(req.query.date);
+    }
+
+    const sql = `SELECT * FROM reservations${conditions.length ? ' WHERE ' + conditions.join(' AND ') : ''} ORDER BY dateTime DESC`;
+    const rows = await queryDB(sql, params);
+    const mapped = rows.map(r => ({
+      reservationId: r.reservationId,
+      customerName: r.customerName,
+      phone: r.phone,
+      reservationDate: r.dateTime,
+      partySize: r.guests,
+      tableId: r.tableId,
+      status: r.status,
+    }));
+    res.json(mapped);
+  }
   catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Create reservation
+app.post('/api/reservations', async (req, res) => {
+  const { customerName, phone, partySize, tableId, reservationDate, notes } = req.body;
+  try {
+    const [result] = await pool.query(
+      'INSERT INTO reservations (customerName, phone, dateTime, guests, tableId, status) VALUES (?, ?, ?, ?, ?, ?)',
+      [customerName, phone, reservationDate, Number(partySize) || 1, tableId || null, 'pending']
+    );
+    // return created reservation in frontend-friendly shape
+    const [[created]] = await pool.query('SELECT * FROM reservations WHERE reservationId = ?', [result.insertId]);
+    res.json({ success: true, reservation: {
+      reservationId: created.reservationId,
+      customerName: created.customerName,
+      phone: created.phone,
+      reservationDate: created.dateTime,
+      partySize: created.guests,
+      tableId: created.tableId,
+      status: created.status,
+    } });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Update reservation
+app.put('/api/reservations/:id', async (req, res) => {
+  const id = req.params.id;
+  const { customerName, phone, partySize, tableId, reservationDate, status } = req.body;
+  try {
+    await pool.query(
+      'UPDATE reservations SET customerName=?, phone=?, dateTime=?, guests=?, tableId=?, status=? WHERE reservationId=?',
+      [customerName, phone, reservationDate, Number(partySize) || 1, tableId || null, status || 'pending', id]
+    );
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Cancel reservation
+app.patch('/api/reservations/:id/cancel', async (req, res) => {
+  try {
+    await pool.query('UPDATE reservations SET status = ? WHERE reservationId = ?', ['cancelled', req.params.id]);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Confirm reservation
+app.patch('/api/reservations/:id/confirm', async (req, res) => {
+  try {
+    await pool.query('UPDATE reservations SET status = ? WHERE reservationId = ?', ['confirmed', req.params.id]);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // Get ingredients

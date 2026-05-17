@@ -36,9 +36,11 @@ export default function AppSidebar() {
   const roleColor = ROLE_COLORS[user.role] || '#C8862A';
 
   // Filter nav items the user has permission to see
-  const visibleNav = SIDEBAR_NAV.filter(item =>
-    hasAnyPermission(item.permissions)
-  );
+  const visibleNav = SIDEBAR_NAV.filter(item => {
+    const permissionAccess = hasAnyPermission(item.permissions);
+    const roleAccess = item.roles ? item.roles.includes(user.role) : true;
+    return permissionAccess && roleAccess;
+  });
 
   // Group items by their group key
   const grouped = visibleNav.reduce((acc, item) => {
