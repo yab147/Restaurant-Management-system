@@ -10,11 +10,13 @@ export function useInventory(filters = {}) {
   });
 }
 
-export function useLowStockAlerts() {
+export function useLowStockAlerts(options = {}) {
   return useQuery({
     queryKey: QUERY_KEYS.inventory.alerts(),
     queryFn:  inventoryApi.getLowStock,
     staleTime: 30_000,
+    refetchInterval: 30_000,
+    ...options,
   });
 }
 

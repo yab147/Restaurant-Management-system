@@ -2,11 +2,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { reservationsApi } from '../api/index.js';
 import { QUERY_KEYS } from '../../../constants/queryKeys.js';
 
-export function useReservations(filters = {}) {
+export function useReservations(filters = {}, options = {}) {
   return useQuery({
     queryKey: QUERY_KEYS.reservations.list(filters),
     queryFn:  () => reservationsApi.getAll(filters),
     staleTime: 30_000,
+    ...options,
   });
 }
 

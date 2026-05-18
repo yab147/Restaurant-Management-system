@@ -26,6 +26,14 @@ export function useCreateMenuItem() {
   });
 }
 
+export function useCreateMenuCategory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: menuApi.createCategory,
+    onSuccess:  () => qc.invalidateQueries({ queryKey: QUERY_KEYS.menu.all() }),
+  });
+}
+
 export function useUpdateMenuItem() {
   const qc = useQueryClient();
   return useMutation({

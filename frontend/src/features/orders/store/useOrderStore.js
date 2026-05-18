@@ -31,8 +31,11 @@ export const useOrderStore = create(
         // Filters (UI state)
         filters: {
             status: 'all',
+            type: 'all',
             tableId: null,
             search: '',
+            startDate: '',
+            endDate: '',
             page: 1,
             size: 25,
         },
@@ -44,8 +47,11 @@ export const useOrderStore = create(
             set({
                 filters: {
                     status: 'all',
+                    type: 'all',
                     tableId: null,
                     search: '',
+                    startDate: '',
+                    endDate: '',
                     page: 1,
                     size: 25,
                 },

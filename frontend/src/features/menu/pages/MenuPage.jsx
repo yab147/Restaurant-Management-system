@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Search, Eye, EyeOff, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Search, Eye, EyeOff, Edit2, Trash2, Tags } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useMenuItems, useMenuCategories, useCreateMenuItem, useUpdateMenuItem, useDeleteMenuItem, useToggleMenuAvailability } from '../hooks/useMenu.js';
+import { useMenuItems, useMenuCategories, useCreateMenuItem, useUpdateMenuItem, useDeleteMenuItem, useToggleMenuAvailability, useCreateMenuCategory } from '../hooks/useMenu.js';
 import { useMenuStore }  from '../store/useMenuStore.js';
 import { usePermission } from '../../../providers/PermissionProvider.jsx';
 import { PERMISSIONS }   from '../../../permissions/matrix.js';
@@ -10,6 +10,7 @@ import Modal             from '../../../shared/components/ui/Modal.jsx';
 import Spinner           from '../../../shared/components/ui/Spinner.jsx';
 
 const EMPTY_FORM = { name: '', description: '', price: '', categoryId: '', availability: true, imageUrl: '' };
+const EMPTY_CATEGORY_FORM = { name: '', description: '', icon: '' };
 
 export default function MenuPage() {
   const { hasPermission } = usePermission();
@@ -21,19 +22,29 @@ export default function MenuPage() {
   const updateItem    = useUpdateMenuItem();
   const deleteItem    = useDeleteMenuItem();
   const toggleAvail   = useToggleMenuAvailability();
+  const createCategory = useCreateMenuCategory();
 
   const canCreate = hasPermission(PERMISSIONS.MENU_CREATE);
   const canEdit   = hasPermission(PERMISSIONS.MENU_EDIT);
   const canDelete = hasPermission(PERMISSIONS.MENU_DELETE);
 
   const [form, setForm] = useState(EMPTY_FORM);
+  const [categoryForm, setCategoryForm] = useState(EMPTY_CATEGORY_FORM);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
 
   const filtered = useMemo(() => {
-    let list = items;
+    let list = [...items];
     if (selectedCategory !== 'all') list = list.filter(i => i.categoryId === Number(selectedCategory));
     if (filters.search) list = list.filter(i => i.name?.toLowerCase().includes(filters.search.toLowerCase()));
+    if (filters.available === 'available') list = list.filter(i => Boolean(i.availability));
+    if (filters.available === 'unavailable') list = list.filter(i => !Boolean(i.availability));
+    if (filters.spicy === 'spicy') list = list.filter(i => Boolean(i.isSpicy));
+    if (filters.popular === 'popular') list = list.filter(i => Boolean(i.isPopular));
+    if (filters.sort === 'price-low') list.sort((a, b) => Number(a.price) - Number(b.price));
+    if (filters.sort === 'price-high') list.sort((a, b) => Number(b.price) - Number(a.price));
+    if (filters.sort === 'name') list.sort((a, b) => String(a.name).localeCompare(String(b.name)));
     return list;
-  }, [items, selectedCategory, filters.search]);
+  }, [items, selectedCategory, filters.search, filters.available, filters.spicy, filters.popular, filters.sort]);
 
   const openCreate = () => { setForm(EMPTY_FORM); setEditingItem({}); };
   const openEdit   = (item) => { setForm({ name: item.name, description: item.description, price: item.price, categoryId: item.categoryId, availability: item.availability, imageUrl: item.imageUrl || '' }); setEditingItem(item); };
@@ -61,6 +72,18 @@ export default function MenuPage() {
     });
   };
 
+  const handleCreateCategory = () => {
+    if (!categoryForm.name.trim()) return;
+    createCategory.mutate(categoryForm, {
+      onSuccess: () => {
+        setShowCategoryModal(false);
+        setCategoryForm(EMPTY_CATEGORY_FORM);
+        toast.success('Category created');
+      },
+      onError: () => toast.error('Failed to create category'),
+    });
+  };
+
   return (
     <div className="p-6 space-y-5">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -69,10 +92,16 @@ export default function MenuPage() {
           <p className="text-sm" style={{ color: '#8B6E52' }}>{filtered.length} items</p>
         </div>
         {canCreate && (
-          <button onClick={openCreate} className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold hover:scale-105 transition-all"
-            style={{ background: 'linear-gradient(135deg, #C8862A, #8B3A0F)', color: 'white' }}>
-            <Plus size={16} /> Add Item
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button onClick={() => setShowCategoryModal(true)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold hover:scale-105 transition-all"
+              style={{ background: '#F0E8DE', color: '#8B3A0F' }}>
+              <Tags size={16} /> Add Category
+            </button>
+            <button onClick={openCreate} className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold hover:scale-105 transition-all"
+              style={{ background: 'linear-gradient(135deg, #C8862A, #8B3A0F)', color: 'white' }}>
+              <Plus size={16} /> Add Item
+            </button>
+          </div>
         )}
       </div>
 
@@ -94,6 +123,35 @@ export default function MenuPage() {
             </button>
           ))}
         </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <select value={filters.available || 'all'} onChange={e => setFilters({ available: e.target.value })}
+          className="px-3 py-2 rounded-xl text-xs font-medium outline-none"
+          style={{ background: 'white', color: '#6B4F3A', border: '1px solid #E8D5C0' }}>
+          <option value="all">All availability</option>
+          <option value="available">Available only</option>
+          <option value="unavailable">Unavailable only</option>
+        </select>
+        <select value={filters.spicy || 'all'} onChange={e => setFilters({ spicy: e.target.value })}
+          className="px-3 py-2 rounded-xl text-xs font-medium outline-none"
+          style={{ background: 'white', color: '#6B4F3A', border: '1px solid #E8D5C0' }}>
+          <option value="all">All spice</option>
+          <option value="spicy">Spicy only</option>
+        </select>
+        <select value={filters.popular || 'all'} onChange={e => setFilters({ popular: e.target.value })}
+          className="px-3 py-2 rounded-xl text-xs font-medium outline-none"
+          style={{ background: 'white', color: '#6B4F3A', border: '1px solid #E8D5C0' }}>
+          <option value="all">All popularity</option>
+          <option value="popular">Popular only</option>
+        </select>
+        <select value={filters.sort || 'name'} onChange={e => setFilters({ sort: e.target.value })}
+          className="px-3 py-2 rounded-xl text-xs font-medium outline-none"
+          style={{ background: 'white', color: '#6B4F3A', border: '1px solid #E8D5C0' }}>
+          <option value="name">Sort by name</option>
+          <option value="price-low">Price: low to high</option>
+          <option value="price-high">Price: high to low</option>
+        </select>
       </div>
 
       {isLoading ? (
@@ -171,6 +229,35 @@ export default function MenuPage() {
               {categories.map(c => <option key={c.categoryId} value={c.categoryId}>{c.name}</option>)}
             </select>
           </div>
+        </div>
+      </Modal>
+
+      <Modal isOpen={showCategoryModal} onClose={() => setShowCategoryModal(false)}
+        title="Add Menu Category" size="sm"
+        footer={
+          <div className="flex gap-3">
+            <button onClick={() => setShowCategoryModal(false)} className="flex-1 py-3 rounded-xl text-sm font-medium"
+              style={{ background: '#F0E8DE', color: '#6B4F3A' }}>Cancel</button>
+            <button onClick={handleCreateCategory} disabled={createCategory.isPending}
+              className="flex-1 py-3 rounded-xl text-sm font-semibold text-white"
+              style={{ background: 'linear-gradient(135deg, #C8862A, #8B3A0F)' }}>
+              {createCategory.isPending ? 'Saving...' : 'Save Category'}
+            </button>
+          </div>
+        }>
+        <div className="space-y-4">
+          {[
+            { key: 'name', label: 'Category Name', placeholder: 'e.g. Breakfast' },
+            { key: 'description', label: 'Description', placeholder: 'Short description' },
+            { key: 'icon', label: 'Icon Label', placeholder: 'e.g. coffee' },
+          ].map(f => (
+            <div key={f.key}>
+              <label className="text-xs font-semibold uppercase tracking-wider block mb-1" style={{ color: '#6B4F3A' }}>{f.label}</label>
+              <input value={categoryForm[f.key]} placeholder={f.placeholder}
+                onChange={e => setCategoryForm(p => ({ ...p, [f.key]: e.target.value }))}
+                className="w-full px-4 py-3 rounded-xl text-sm outline-none" style={{ border: '2px solid #E8D5C0', color: '#2C1810' }} />
+            </div>
+          ))}
         </div>
       </Modal>
     </div>

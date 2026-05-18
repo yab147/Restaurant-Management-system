@@ -17,7 +17,7 @@
  */
 
 import React, { useState } from 'react';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, RotateCcw } from 'lucide-react';
 import { useOrders, useUpdateOrderStatus, useCreateOrder } from '../hooks/useOrders.js';
 import { useOrderStore }   from '../store/useOrderStore.js';
 import { useMenuItems }    from '../../menu/hooks/useMenu.js';
@@ -36,7 +36,7 @@ import {
 export default function OrdersListPage() {
   const { hasPermission } = usePermission();
   const { user } = useAuth();
-  const { filters, setFilters, isCreatingOrder, setIsCreatingOrder } = useOrderStore();
+  const { filters, setFilters, resetFilters, isCreatingOrder, setIsCreatingOrder } = useOrderStore();
 
   // Server state via React Query
   const { data: orders = [], isLoading } = useOrders(filters);
@@ -144,6 +144,34 @@ export default function OrdersListPage() {
             </button>
           ))}
         </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <select value={filters.type || 'all'} onChange={e => setFilters({ type: e.target.value })}
+          className="px-3 py-2 rounded-xl text-xs font-medium outline-none capitalize"
+          style={{ background: 'white', color: '#6B4F3A', border: '1px solid #E8D5C0' }}>
+          <option value="all">All types</option>
+          <option value="dine-in">Dine in</option>
+          <option value="takeaway">Takeaway</option>
+          <option value="delivery">Delivery</option>
+        </select>
+        <select value={filters.tableId || ''} onChange={e => setFilters({ tableId: e.target.value || null })}
+          className="px-3 py-2 rounded-xl text-xs font-medium outline-none"
+          style={{ background: 'white', color: '#6B4F3A', border: '1px solid #E8D5C0' }}>
+          <option value="">All tables</option>
+          {tables.map(t => <option key={t.tableId} value={t.tableId}>Table {t.number}</option>)}
+        </select>
+        <input type="date" value={filters.startDate || ''} onChange={e => setFilters({ startDate: e.target.value })}
+          className="px-3 py-2 rounded-xl text-xs font-medium outline-none"
+          style={{ background: 'white', color: '#6B4F3A', border: '1px solid #E8D5C0' }} />
+        <input type="date" value={filters.endDate || ''} onChange={e => setFilters({ endDate: e.target.value })}
+          className="px-3 py-2 rounded-xl text-xs font-medium outline-none"
+          style={{ background: 'white', color: '#6B4F3A', border: '1px solid #E8D5C0' }} />
+        <button type="button" onClick={resetFilters}
+          className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold transition-all hover:bg-stone-100"
+          style={{ background: 'white', color: '#8B6E52', border: '1px solid #E8D5C0' }}>
+          <RotateCcw size={13} /> Reset
+        </button>
       </div>
 
       {/* ── Orders Grid ────────────────────────────────────── */}

@@ -17,11 +17,12 @@ import {
 import { QUERY_KEYS } from '../../../constants/queryKeys.js';
 
 /** Fetch paginated/filtered orders list */
-export function useOrders(filters = {}) {
+export function useOrders(filters = {}, options = {}) {
   return useQuery({
     queryKey:  QUERY_KEYS.orders.list(filters),
     queryFn:   () => fetchOrders(filters),
     staleTime: 30_000,
+    ...options,
   });
 }
 
