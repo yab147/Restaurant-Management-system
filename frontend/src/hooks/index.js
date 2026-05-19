@@ -38,15 +38,15 @@ export function usePrevious(value) {
 }
 
 /**
- * useLocalStorage - Sync state with localStorage
+ * useLocalStorage - Sync state with sessionStorage
  */
 export function useLocalStorage(key, initialValue) {
     const [storedValue, setStoredValue] = React.useState(() => {
         try {
-            const item = window.localStorage.getItem(key);
+            const item = window.sessionStorage.getItem(key);
             return item ? JSON.parse(item) : initialValue;
         } catch (error) {
-            console.error(`Error reading from localStorage: ${error}`);
+            console.error(`Error reading from sessionStorage: ${error}`);
             return initialValue;
         }
     });
@@ -55,9 +55,9 @@ export function useLocalStorage(key, initialValue) {
         try {
             const valueToStore = value instanceof Function ? value(storedValue) : value;
             setStoredValue(valueToStore);
-            window.localStorage.setItem(key, JSON.stringify(valueToStore));
+            window.sessionStorage.setItem(key, JSON.stringify(valueToStore));
         } catch (error) {
-            console.error(`Error writing to localStorage: ${error}`);
+            console.error(`Error writing to sessionStorage: ${error}`);
         }
     }, [key, storedValue]);
 

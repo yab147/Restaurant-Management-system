@@ -11,14 +11,14 @@
  * Uses apiClient (axios instance with interceptors) so all requests
  * automatically get auth headers, error normalization, and 401 handling.
  *
- * NOTE: login/signup/refresh are exceptions — they DON'T need a Bearer token.
+ * NOTE: login/signup are exceptions — they DON'T need a Bearer token.
  * The apiClient is smart enough to not break without a token.
  */
 
 import apiClient from '../../../services/api/axios.js';
 
 export const authApi = {
-  /** POST /auth/login — returns { success, user, accessToken, refreshToken } */
+  /** POST /auth/login — returns { success, user, accessToken } */
   login: async (email, password) => {
     const { data } = await apiClient.post('/login', { email, password });
     return data;
@@ -27,12 +27,6 @@ export const authApi = {
   /** POST /auth/signup — returns { success, message } */
   signup: async (name, email, password, phone) => {
     const { data } = await apiClient.post('/signup', { name, email, password, phone });
-    return data;
-  },
-
-  /** POST /auth/refresh — returns { accessToken, refreshToken? } */
-  refresh: async (refreshToken) => {
-    const { data } = await apiClient.post('/refresh', { token: refreshToken });
     return data;
   },
 

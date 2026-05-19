@@ -14,9 +14,7 @@ const config = {
     // Auth Configuration
     auth: {
         tokenKey: import.meta.env.VITE_AUTH_TOKEN_KEY || 'auth_token',
-        refreshTokenKey: import.meta.env.VITE_AUTH_REFRESH_TOKEN_KEY || 'auth_refresh_token',
         userKey: import.meta.env.VITE_AUTH_USER_KEY || 'auth_user',
-        tokenRefreshPath: '/auth/refresh',
         loginPath: '/login',
     },
 

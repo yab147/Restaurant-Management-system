@@ -2,7 +2,7 @@
  * Axios API Client
  * Centralized HTTP client with interceptors for:
  * - Authorization header injection
- * - Token refresh on 401
+ * - Session expiry handling
  * - Centralized error handling
  * - Request/response logging
  */
@@ -21,21 +21,6 @@ export const apiClient = axios.create({
         'Content-Type': 'application/json',
     },
 });
-
-// Token refresh queue management (atomic refresh)
-let isRefreshing = false;
-let refreshQueue = [];
-
-const processQueue = (error, token = null) => {
-    refreshQueue.forEach(callback => {
-        if (error) {
-            callback(error);
-        } else {
-            callback(null, token);
-        }
-    });
-    refreshQueue = [];
-};
 
 const isInvalidTokenResponse = (error) => {
     const status = error.response?.status;
@@ -67,65 +52,12 @@ apiClient.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
-// Response interceptor: handle 401 and token refresh
+// Response interceptor: handle auth expiry and normalize errors
 apiClient.interceptors.response.use(
     (response) => response,
-    async (error) => {
-        const originalRequest = error.config;
-
-        // Handle expired/invalid access tokens - attempt token refresh once
-        if (originalRequest && isInvalidTokenResponse(error) && !originalRequest._isRetry) {
-            // If already refreshing, queue this request
-            if (isRefreshing) {
-                return new Promise((resolve, reject) => {
-                    refreshQueue.push((err, token) => {
-                        if (err) {
-                            reject(err);
-                        } else {
-                            originalRequest.headers.Authorization = `Bearer ${token}`;
-                            resolve(apiClient(originalRequest));
-                        }
-                    });
-                });
-            }
-
-            // Mark request as retried to prevent infinite loop
-            originalRequest._isRetry = true;
-            isRefreshing = true;
-
-            try {
-                const refreshToken = authStorage.getRefreshToken();
-                if (!refreshToken) {
-                    throw new Error('No refresh token available');
-                }
-
-                // Call refresh endpoint
-                const { data } = await axios.post(
-                    `${API_BASE_URL}/auth/refresh`,
-                    { refreshToken },
-                    { timeout: 10000 }
-                );
-
-                // Update stored token
-                authStorage.setAccessToken(data.accessToken);
-                if (data.refreshToken) {
-                    authStorage.setRefreshToken(data.refreshToken);
-                }
-
-                // Process queued requests
-                processQueue(null, data.accessToken);
-                isRefreshing = false;
-
-                // Retry original request
-                originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
-                return apiClient(originalRequest);
-            } catch (refreshError) {
-                // Token refresh failed - logout user
-                processQueue(refreshError, null);
-                isRefreshing = false;
-                expireSession();
-                return Promise.reject(refreshError);
-            }
+    (error) => {
+        if (isInvalidTokenResponse(error)) {
+            expireSession();
         }
 
         // Handle other errors

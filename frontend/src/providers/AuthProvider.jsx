@@ -7,15 +7,15 @@
  *   - providers/AuthProvider.jsx (unused skeleton)
  *
  * This file is the consolidated replacement. It owns:
- *   - JWT access/refresh token lifecycle
- *   - User session persistence via authStorage (keys: holy_restaurant_*)
- *   - Login, signup, logout, token refresh
+ *   - JWT access token lifecycle
+ *   - User session persistence via sessionStorage (keys: holy_restaurant_*)
+ *   - Login, signup, logout
  *
  * HOW DATA FLOWS:
  *   Login form → authApi.login() → stores tokens → setUser()
- *   App boot   → authStorage.getUser() → restores session
- *   401 error  → axios interceptor calls refreshToken() → retries request
- *   Logout     → authStorage.clearAll() → setUser(null) → redirect
+ *   App boot   → authStorage.getUser() → restores current tab session
+ *   Auth error → axios interceptor clears session → redirects to login
+ *   Logout     → authStorage.clearAll() → setUser(null)
  */
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
@@ -30,7 +30,7 @@ export function AuthProvider({ children }) {
   const [isLoading, setIsLoading] = useState(true);
   const [authError, setAuthError] = useState(null);
 
-  // Restore session from localStorage on first render
+  // Restore session from sessionStorage on first render
   useEffect(() => {
     const storedUser  = authStorage.getUser();
     const storedToken = authStorage.getAccessToken();
@@ -58,7 +58,6 @@ export function AuthProvider({ children }) {
       if (data.success && data.user) {
         authStorage.setUser(data.user);
         authStorage.setAccessToken(data.accessToken);
-        if (data.refreshToken) authStorage.setRefreshToken(data.refreshToken);
         setUser(data.user);
         return { success: true, user: data.user };
       }
@@ -95,24 +94,6 @@ export function AuthProvider({ children }) {
     setAuthError(null);
   }, []);
 
-  /** Refresh token — called by axios interceptor on 401 */
-  const refreshToken = useCallback(async () => {
-    const token = authStorage.getRefreshToken();
-    if (!token) { logout(); return null; }
-    try {
-      const data = await authApi.refresh(token);
-      if (data.accessToken) {
-        authStorage.setAccessToken(data.accessToken);
-        if (data.refreshToken) authStorage.setRefreshToken(data.refreshToken);
-        return data.accessToken;
-      }
-    } catch {
-      /* fall through */
-    }
-    logout();
-    return null;
-  }, [logout]);
-
   /** Update stored user profile (e.g., after profile edit) */
   const updateUser = useCallback((updates) => {
     const updated = { ...user, ...updates };
@@ -128,7 +109,6 @@ export function AuthProvider({ children }) {
     login,
     signup,
     logout,
-    refreshToken,
     updateUser,
   };
 

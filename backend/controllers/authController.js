@@ -14,34 +14,13 @@ export const login = async (req, res) => {
                 process.env.JWT_SECRET || 'secret123',
                 { expiresIn: ACCESS_TOKEN_EXPIRES_IN },
             );
-            const refreshToken = jwt.sign(
-                { userId: user.userId, email: user.email, role: user.role, name: user.name },
-                process.env.JWT_REFRESH_SECRET || 'refreshSecret123',
-                { expiresIn: '7d' },
-            );
             const { password: _pw, ...safeUser } = user;
-            return res.json({ success: true, user: safeUser, accessToken, refreshToken });
+            return res.json({ success: true, user: safeUser, accessToken });
         }
         return res.status(401).json({ success: false, message: 'Invalid credentials' });
     } catch (error) {
         console.error('Database error:', error);
         res.status(500).json({ success: false, message: 'Internal server error' });
-    }
-};
-
-export const refresh = (req, res) => {
-    const token = req.body.token || req.body.refreshToken;
-    if (!token) return res.status(401).json({ success: false, message: 'Refresh token required' });
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET || 'refreshSecret123');
-        const accessToken = jwt.sign(
-            { userId: decoded.userId, email: decoded.email, role: decoded.role, name: decoded.name },
-            process.env.JWT_SECRET || 'secret123',
-            { expiresIn: ACCESS_TOKEN_EXPIRES_IN },
-        );
-        res.json({ success: true, accessToken });
-    } catch (err) {
-        res.status(403).json({ success: false, message: 'Invalid refresh token' });
     }
 };
 
