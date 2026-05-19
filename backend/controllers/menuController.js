@@ -9,6 +9,8 @@ const mapMenuItem = (item) => ({
     imageUrl: item.imageUrl || item.image || null,
 });
 
+const MAX_IMAGE_PAYLOAD = 600_000; // ~600k chars for data URLs / long URLs
+
 export const getMenu = async (req, res) => {
     try {
         const rows = await queryDB('SELECT * FROM menu_items ORDER BY name ASC');
@@ -29,6 +31,10 @@ export const addMenuItem = async (req, res) => {
     const { categoryId, name, description, price, availability, prepTime, isSpicy, isPopular } = req.body;
     const image = req.body.image ?? req.body.imageUrl ?? null;
     const imageUrl = req.body.imageUrl ?? req.body.image ?? null;
+    const imgStr = String(imageUrl || '');
+    if (imgStr.length > MAX_IMAGE_PAYLOAD) {
+        return res.status(400).json({ error: 'Image is too large. Use a smaller file or a hosted image URL.' });
+    }
     try {
         const [result] = await pool.query(
             'INSERT INTO menu_items (categoryId, name, description, price, availability, image, prepTime, isPopular, isSpicy, imageUrl) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
@@ -54,6 +60,10 @@ export const updateMenuItem = async (req, res) => {
     const { categoryId, name, description, price, availability, prepTime, isSpicy, isPopular } = req.body;
     const image = req.body.image ?? req.body.imageUrl ?? null;
     const imageUrl = req.body.imageUrl ?? req.body.image ?? null;
+    const imgStr = String(imageUrl || '');
+    if (imgStr.length > MAX_IMAGE_PAYLOAD) {
+        return res.status(400).json({ error: 'Image is too large. Use a smaller file or a hosted image URL.' });
+    }
     try {
         await pool.query(
             'UPDATE menu_items SET categoryId=?, name=?, description=?, price=?, availability=?, image=?, prepTime=?, isPopular=?, isSpicy=?, imageUrl=? WHERE itemId=?',

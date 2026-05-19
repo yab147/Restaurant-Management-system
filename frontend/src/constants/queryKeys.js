@@ -32,6 +32,8 @@ export const QUERY_KEYS = {
     list:       (filters) => ['menu', 'list', filters ?? {}],
     detail:     (id)      => ['menu', 'detail', id],
     categories: ()        => ['menu', 'categories'],
+    publicItems: ()      => ['menu', 'public', 'items'],
+    publicCategories: () => ['menu', 'public', 'categories'],
   },
 
   inventory: {

@@ -1,26 +1,31 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useMenuItems, useMenuCategories } from '../../../features/menu/hooks/useMenu.js';
+import { usePublicMenuItems, usePublicMenuCategories } from '../../../features/menu/hooks/useMenu.js';
 import Spinner from '../ui/Spinner.jsx';
 
 /**
- * MenuPreview — Landing Page Component
- * Refactored to use Domain-Driven React Query hooks instead of AppContext.
+ * Landing menu — uses public API (no login). Shows photos from imageUrl.
  */
 const MenuPreview = () => {
   const navigate = useNavigate();
   const [menuFilter, setMenuFilter] = useState(null);
 
-  // Fetch data from feature-specific hooks
-  const { data: menuItems = [],      isLoading: loadingItems } = useMenuItems();
-  const { data: menuCategories = [], isLoading: loadingCats }  = useMenuCategories();
+  const { data: menuItems = [], isLoading: loadingItems } = usePublicMenuItems();
+  const { data: menuCategories = [], isLoading: loadingCats } = usePublicMenuCategories();
 
   const isLoading = loadingItems || loadingCats;
 
-  // Filter items logic
-  const filteredItems = menuFilter
-    ? menuItems.filter(i => i.categoryId === menuFilter).slice(0, 8)
-    : menuItems.filter(i => i.isPopular || i.availability).slice(0, 8);
+  const filteredItems = useMemo(() => {
+    const available = (menuItems || []).filter(i => i && i.availability);
+    let list = menuFilter
+      ? available.filter(i => i.categoryId === menuFilter)
+      : available;
+    list = [...list].sort((a, b) => {
+      if (Boolean(b.isPopular) !== Boolean(a.isPopular)) return Number(b.isPopular) - Number(a.isPopular);
+      return String(a.name || '').localeCompare(String(b.name || ''));
+    });
+    return list.slice(0, 12);
+  }, [menuItems, menuFilter]);
 
   return (
     <section id="menu" className="py-24" style={{ background: 'var(--bg-light-almond)' }}>
@@ -36,13 +41,13 @@ const MenuPreview = () => {
             Our Menu
           </h2>
           <p style={{ color: 'var(--text-brown-muted)' }} className="max-w-xl mx-auto">
-            Explore the rich tapestry of Ethiopian flavors, from hearty wots to refreshing beverages.
+            Browse dishes from our live catalog — photos and prices update as our team refreshes the menu.
           </p>
         </div>
 
-        {/* Category Filter */}
         <div className="flex flex-wrap justify-center gap-3 mb-10">
           <button
+            type="button"
             onClick={() => setMenuFilter(null)}
             className="px-5 py-2 rounded-full text-sm font-medium transition-all"
             style={menuFilter === null ? {
@@ -54,11 +59,12 @@ const MenuPreview = () => {
               border: '1px solid var(--text-gold-light)'
             }}
           >
-            ⭐ Popular
+            All dishes
           </button>
           {menuCategories.map(cat => (
             <button
               key={cat.categoryId}
+              type="button"
               onClick={() => setMenuFilter(cat.categoryId)}
               className="px-5 py-2 rounded-full text-sm font-medium transition-all"
               style={menuFilter === cat.categoryId ? {
@@ -70,31 +76,37 @@ const MenuPreview = () => {
                 border: '1px solid var(--text-gold-light)'
               }}
             >
-              {cat.icon} {cat.name}
+              {cat.icon ? `${cat.icon} ` : ''}{cat.name}
             </button>
           ))}
         </div>
 
-        {/* Grid Area */}
         {isLoading ? (
           <div className="flex justify-center py-20"><Spinner size="lg" /></div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredItems.length === 0 ? (
-              <div className="col-span-full text-center py-10 text-gray-500">No items available in this category.</div>
+              <div className="col-span-full text-center py-14 rounded-2xl" style={{ background: 'white', border: '1px solid #F0E8DE' }}>
+                <p className="text-lg font-semibold mb-2" style={{ color: '#2C1810' }}>Menu coming soon</p>
+                <p className="text-sm" style={{ color: '#8B6E52' }}>Our team is updating the catalog. Check back shortly or sign in to explore more.</p>
+              </div>
             ) : filteredItems.map(item => (
-              <div key={item.itemId} className="rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all hover:-translate-y-1" style={{ background: 'white' }}>
-                <div className="h-44 relative flex items-center justify-center text-6xl" style={{
-                  background: 'linear-gradient(135deg, var(--bg-light-sand), var(--bg-light-tan))'
-                }}>
-                  {menuCategories.find(c => c.categoryId === item.categoryId)?.icon || '🍽️'}
+              <article key={item.itemId} className="rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all hover:-translate-y-1" style={{ background: 'white' }}>
+                <div className="h-48 relative bg-stone-100">
+                  {item.imageUrl ? (
+                    <img src={item.imageUrl} alt={item.name || 'Menu item'} className="w-full h-full object-cover" loading="lazy" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-5xl" style={{
+                      background: 'linear-gradient(135deg, var(--bg-light-sand), var(--bg-light-tan))'
+                    }}>🍽️</div>
+                  )}
                   {item.isPopular && (
                     <span className="absolute top-3 left-3 text-xs px-2 py-1 rounded-full font-semibold" style={{
                       background: 'var(--primary-gold)',
                       color: 'white'
                     }}>Popular</span>
                   )}
-                  {item.isSpicy && <span className="absolute top-3 right-3 text-xs">🌶️</span>}
+                  {item.isSpicy && <span className="absolute top-3 right-3 text-xs" title="Spicy">🌶️</span>}
                 </div>
                 <div className="p-4">
                   <h3 className="font-bold text-base mb-1" style={{
@@ -106,16 +118,17 @@ const MenuPreview = () => {
                   <p className="text-xs mb-3 line-clamp-2" style={{ color: 'var(--text-brown-muted)' }}>{item.description}</p>
                   <div className="flex items-center justify-between">
                     <span className="font-bold" style={{ color: 'var(--primary-gold)' }}>ETB {item.price}</span>
-                    {item.prepTime && <span className="text-xs" style={{ color: 'var(--text-brown-accent)' }}>⏱ {item.prepTime} min</span>}
+                    {item.prepTime ? <span className="text-xs" style={{ color: 'var(--text-brown-accent)' }}>⏱ {item.prepTime} min</span> : null}
                   </div>
                 </div>
-              </div>
+              </article>
             ))}
           </div>
         )}
 
         <div className="text-center mt-10">
           <button
+            type="button"
             onClick={() => navigate('/login')}
             className="px-8 py-4 rounded-full font-semibold text-sm tracking-wider transition-all hover:scale-105"
             style={{
@@ -123,7 +136,7 @@ const MenuPreview = () => {
               color: 'var(--text-white)'
             }}
           >
-            Order Online → Login as Customer
+            Order online — sign in
           </button>
         </div>
       </div>

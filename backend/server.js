@@ -13,6 +13,7 @@ import usersRoutes from './routes/users.js';
 import paymentsRoutes from './routes/payments.js';
 import reportsRoutes from './routes/reports.js';
 import notificationsRoutes from './routes/notifications.js';
+import publicRoutes from './routes/public.js';
 import { authenticate } from './middleware/authMiddleware.js';
 import { requirePaymentAccess } from './middleware/roleMiddleware.js';
 
@@ -21,7 +22,7 @@ dotenv.config();
 const app = express();
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '2mb' }));
 
 (async () => {
   try {
@@ -33,9 +34,10 @@ app.use(express.json());
   }
 })();
 
-// Public auth
+// Public auth + catalog (landing page)
 app.use('/api', authRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/public', publicRoutes);
 
 // Protected API (JWT required)
 app.use('/api/menu', authenticate, menuRoutes);

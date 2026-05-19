@@ -17,7 +17,7 @@
  *  Done. The sidebar, route guard, and code splitting all work automatically.
  */
 
-import React, { Suspense } from 'react';
+import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 
 import { useAuth }       from '../providers/AuthProvider.jsx';
@@ -42,10 +42,14 @@ import { reservationsRoutes} from '../features/reservations/routes/index.jsx';
 import { reportsRoutes }     from '../features/reports/routes/index.jsx';
 import { usersRoutes }       from '../features/users/routes/index.jsx';
 import { dashboardRoutes }   from '../features/dashboard/routes/index.jsx';
+import { settingsRoutes }    from '../features/settings/routes/index.jsx';
+
+const NotFoundPage = lazy(() => import('../pages/NotFoundPage.jsx'));
 
 // All feature routes in one flat array
 const ALL_FEATURE_ROUTES = [
   ...dashboardRoutes,
+  ...settingsRoutes,
   ...ordersRoutes,
   ...menuRoutes,
   ...inventoryRoutes,
@@ -55,6 +59,12 @@ const ALL_FEATURE_ROUTES = [
   ...reportsRoutes,
   ...usersRoutes,
 ];
+
+const IN_APP_NOT_FOUND_ROUTE = {
+  path: '*',
+  element: <NotFoundPage variant="app" />,
+  permissions: [],
+};
 
 // ── Loading fallback ─────────────────────────────────────────────────────────
 function PageLoader() {
@@ -144,18 +154,11 @@ export default function AppRoutes() {
         ))}
         {/* Default authenticated redirect */}
         <Route path="/app" element={<Navigate to="/dashboard" replace />} />
+        <Route
+          path="*"
+          element={<ProtectedRoute route={IN_APP_NOT_FOUND_ROUTE} />}
+        />
       </Route>
-
-      {/* ── 404 ─── */}
-      <Route path="*" element={
-        <div className="flex flex-col items-center justify-center min-h-screen text-center p-8">
-          <div className="text-6xl mb-4">404</div>
-          <h2 className="text-2xl font-black mb-2" style={{ color: '#2C1810', fontFamily: "'Playfair Display', serif" }}>
-            Page Not Found
-          </h2>
-          <a href="/" className="text-sm font-semibold" style={{ color: '#C8862A' }}>← Back to Home</a>
-        </div>
-      } />
     </Routes>
   );
 }
