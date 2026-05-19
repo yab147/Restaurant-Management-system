@@ -1,3 +1,4 @@
+// SignupPage.jsx - COMPLETELY MATCHES LOGIN PAGE LAYOUT
 import React, { useState } from 'react';
 import { Eye, EyeOff, ArrowLeft, UserPlus } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
@@ -13,13 +14,41 @@ const SignupPage = () => {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const validatePassword = (pwd) => {
+    return {
+      minLength: pwd.length >= 8,
+      hasUppercase: /[A-Z]/.test(pwd),
+      hasNumber: /[0-9]/.test(pwd)
+    };
+  };
+
+  const isPasswordValid = () => {
+    const validation = validatePassword(password);
+    return validation.minLength && validation.hasUppercase && validation.hasNumber;
+  };
+
+  const passwordValidation = validatePassword(password);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    if (!isPasswordValid()) {
+      setError('Password must be at least 8 characters with 1 uppercase letter and 1 number');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
     setLoading(true);
     await new Promise(r => setTimeout(r, 600));
 
@@ -101,7 +130,7 @@ const SignupPage = () => {
           </div>
         </div>
 
-        {/* Right side – form */}
+        {/* Right side – form - EXACT same as Login page */}
         <div className="w-full lg:w-1/2 flex items-center justify-center px-6 py-12" style={{ background: 'var(--bg-light-cream)' }}>
           <div className="w-full max-w-md">
             <button onClick={() => navigate('/')} className="flex items-center gap-2 mb-8 text-sm font-medium transition-colors hover:opacity-70" style={{ color: 'var(--text-brown-muted)' }}>
@@ -139,6 +168,7 @@ const SignupPage = () => {
                   onBlur={e => e.target.style.borderColor = 'var(--bg-light-nude)'}
                 />
               </div>
+
               <div>
                 <label className="block text-xs font-semibold mb-2 tracking-wider uppercase" style={{ color: 'var(--text-brown-deep)' }}>Phone Number</label>
                 <PhoneInput
@@ -147,13 +177,9 @@ const SignupPage = () => {
                   value={phone}
                   onChange={setPhone}
                   className="phone-input-custom"
-                  style={{
-                    '--PhoneInput-color--focus': 'var(--primary-gold)',
-                    '--PhoneInputCountryFlag-borderColor--focus': 'var(--primary-gold)',
-                    '--PhoneInputCountrySelectArrow-color--focus': 'var(--primary-gold)'
-                  }}
                 />
               </div>
+
               <div>
                 <label className="block text-xs font-semibold mb-2 tracking-wider uppercase" style={{ color: 'var(--text-brown-deep)' }}>Email Address</label>
                 <input
@@ -195,6 +221,48 @@ const SignupPage = () => {
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
+                {password && (
+                  <div className="mt-2 space-y-1 text-xs">
+                    <div style={{ color: passwordValidation.minLength ? 'var(--ethiopia-green)' : 'var(--text-brown-muted)' }}>
+                      {passwordValidation.minLength ? '✓' : '○'} At least 8 characters
+                    </div>
+                    <div style={{ color: passwordValidation.hasUppercase ? 'var(--ethiopia-green)' : 'var(--text-brown-muted)' }}>
+                      {passwordValidation.hasUppercase ? '✓' : '○'} 1 uppercase letter (A-Z)
+                    </div>
+                    <div style={{ color: passwordValidation.hasNumber ? 'var(--ethiopia-green)' : 'var(--text-brown-muted)' }}>
+                      {passwordValidation.hasNumber ? '✓' : '○'} 1 number (0-9)
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold mb-2 tracking-wider uppercase" style={{ color: 'var(--text-brown-deep)' }}>Confirm Password</label>
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    className="w-full px-4 py-3.5 rounded-xl text-sm outline-none transition-all pr-12"
+                    style={{
+                      background: 'white',
+                      border: confirmPassword && password !== confirmPassword ? '2px solid #DC2626' : '2px solid var(--bg-light-nude)',
+                      color: 'var(--bg-dark-accent)'
+                    }}
+                    onFocus={e => e.target.style.borderColor = 'var(--primary-gold)'}
+                    onBlur={e => e.target.style.borderColor = confirmPassword && password !== confirmPassword ? '#DC2626' : 'var(--bg-light-nude)'}
+                  />
+                  <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-4 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-brown-muted)' }}>
+                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+                {confirmPassword && password !== confirmPassword && (
+                  <div className="mt-1 text-xs" style={{ color: '#DC2626' }}>
+                    ✗ Passwords do not match
+                  </div>
+                )}
               </div>
 
               {error && (

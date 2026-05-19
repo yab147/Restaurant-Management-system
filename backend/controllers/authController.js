@@ -3,6 +3,18 @@ import { queryDB, pool } from '../db/index.js';
 
 const ACCESS_TOKEN_EXPIRES_IN = '1h';
 
+const validatePassword = (password) => {
+    const validation = {
+        minLength: password.length >= 8,
+        hasUppercase: /[A-Z]/.test(password),
+        hasNumber: /[0-9]/.test(password)
+    };
+    return {
+        isValid: validation.minLength && validation.hasUppercase && validation.hasNumber,
+        validation
+    };
+};
+
 export const login = async (req, res) => {
     const { email, password } = req.body;
     try {
@@ -27,6 +39,15 @@ export const login = async (req, res) => {
 export const signup = async (req, res) => {
     const { name, email, password, phone } = req.body;
     try {
+        const { isValid, validation } = validatePassword(password);
+        if (!isValid) {
+            return res.status(400).json({
+                success: false,
+                message: 'Password must be at least 8 characters with 1 uppercase letter and 1 number',
+                validation
+            });
+        }
+
         const existing = await queryDB('SELECT * FROM users WHERE email = ?', [email]);
         if (existing.length > 0) return res.status(400).json({ success: false, message: 'Email already exists' });
 
