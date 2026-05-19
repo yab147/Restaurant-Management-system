@@ -1,6 +1,8 @@
 import jwt from 'jsonwebtoken';
 import { queryDB, pool } from '../db/index.js';
 
+const ACCESS_TOKEN_EXPIRES_IN = '1d';
+
 export const login = async (req, res) => {
     const { email, password } = req.body;
     try {
@@ -10,7 +12,7 @@ export const login = async (req, res) => {
             const accessToken = jwt.sign(
                 { userId: user.userId, email: user.email, role: user.role, name: user.name },
                 process.env.JWT_SECRET || 'secret123',
-                { expiresIn: '1h' },
+                { expiresIn: ACCESS_TOKEN_EXPIRES_IN },
             );
             const refreshToken = jwt.sign(
                 { userId: user.userId, email: user.email, role: user.role, name: user.name },
@@ -35,7 +37,7 @@ export const refresh = (req, res) => {
         const accessToken = jwt.sign(
             { userId: decoded.userId, email: decoded.email, role: decoded.role, name: decoded.name },
             process.env.JWT_SECRET || 'secret123',
-            { expiresIn: '1h' },
+            { expiresIn: ACCESS_TOKEN_EXPIRES_IN },
         );
         res.json({ success: true, accessToken });
     } catch (err) {
