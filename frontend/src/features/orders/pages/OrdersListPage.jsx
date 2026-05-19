@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 /**
  * OrdersListPage — The single Orders page for ALL roles
  *
@@ -19,27 +20,41 @@
 
 import React, { useMemo, useState } from 'react';
 import { Plus, Search, RotateCcw } from 'lucide-react';
+=======
+import React, { useState } from 'react';
+import { Plus, Search, RotateCcw, Grid, List, SlidersHorizontal, Check, Flame, Bell, Coffee, CreditCard } from 'lucide-react';
+>>>>>>> Stashed changes
 import { useOrders, useUpdateOrderStatus, useCreateOrder } from '../hooks/useOrders.js';
-import { useOrderStore }   from '../store/useOrderStore.js';
-import { useMenuItems }    from '../../menu/hooks/useMenu.js';
-import { useTables }       from '../../tables/hooks/useTables.js';
-import { usePermission }   from '../../../providers/PermissionProvider.jsx';
-import { useAuth }         from '../../../providers/AuthProvider.jsx';
-import { PERMISSIONS }     from '../../../permissions/matrix.js';
-import Badge               from '../../../shared/components/ui/Badge.jsx';
-import Spinner             from '../../../shared/components/ui/Spinner.jsx';
-import Modal               from '../../../shared/components/ui/Modal.jsx';
+import { useOrderStore } from '../store/useOrderStore.js';
+import { useMenuItems } from '../../menu/hooks/useMenu.js';
+import { useTables } from '../../tables/hooks/useTables.js';
+import { usePermission } from '../../../providers/PermissionProvider.jsx';
+import { useAuth } from '../../../providers/AuthProvider.jsx';
+import { useLocalStorage } from '../../../hooks/index.js';
+import { PERMISSIONS } from '../../../permissions/matrix.js';
+import Badge from '../../../shared/components/ui/Badge.jsx';
+import Spinner from '../../../shared/components/ui/Spinner.jsx';
+import Modal from '../../../shared/components/ui/Modal.jsx';
 import {
   getAdvanceableNextStatus, isTerminalStatus, formatOrderId,
   calculateOrderTotal,
 } from '../utils/orderUtils.js';
 import { getStatusFiltersForRole, buildOrderQueryFilters } from '../utils/roleOrderFilters.js';
 
+const STATUS_BUTTONS = {
+  confirmed: { label: 'Confirm Order', icon: Check, bg: 'linear-gradient(135deg, #059669, #047857)', text: 'white' },
+  preparing: { label: 'Start Cooking', icon: Flame, bg: 'linear-gradient(135deg, #D97706, #B45309)', text: 'white' },
+  ready:     { label: 'Mark Ready', icon: Bell, bg: 'linear-gradient(135deg, #3B82F6, #1D4ED8)', text: 'white' },
+  served:    { label: 'Serve Order', icon: Coffee, bg: 'linear-gradient(135deg, #8B5CF6, #6D28D9)', text: 'white' },
+  paid:      { label: 'Process Payment', icon: CreditCard, bg: 'linear-gradient(135deg, #10B981, #047857)', text: 'white' },
+};
+
 export default function OrdersListPage() {
   const { hasPermission } = usePermission();
   const { user } = useAuth();
   const { filters, setFilters, resetFilters, isCreatingOrder, setIsCreatingOrder } = useOrderStore();
 
+<<<<<<< Updated upstream
   const canCreate        = hasPermission(PERMISSIONS.ORDERS_CREATE);
 
   const apiFilters = useMemo(
@@ -51,9 +66,17 @@ export default function OrdersListPage() {
   const { data: orders = [], isLoading } = useOrders(apiFilters);
   const { data: menuItems = [] } = useMenuItems({}, { enabled: canCreate });
   const { data: tables = [] } = useTables({ enabled: canCreate });
+=======
+  // Server state via React Query
+  const { data: orders = [], isLoading } = useOrders(filters);
+  const { data: menuItems = [] } = useMenuItems();
+  const { data: tables = [] } = useTables();
+>>>>>>> Stashed changes
 
-  const updateStatus  = useUpdateOrderStatus();
+  const updateStatus = useUpdateOrderStatus();
   const createOrderMutation = useCreateOrder();
+  const [orderViewMode, setOrderViewMode] = useLocalStorage('ordersViewMode', 'grid');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [newForm, setNewForm] = useState({ customerName: '', tableId: '', type: 'dine-in', notes: '' });
@@ -64,7 +87,15 @@ export default function OrdersListPage() {
   const canPay           = hasPermission(PERMISSIONS.ORDERS_PROCESS_PAYMENT);
   const isChef           = user?.role === 'chef';
 
+<<<<<<< Updated upstream
   const statusAdvanceOptions = { canEdit, canQueueManage: canQueueManage && !canEdit };
+=======
+  // Permissions
+  const canCreate = hasPermission(PERMISSIONS.ORDERS_CREATE);
+  const canEdit = hasPermission(PERMISSIONS.ORDERS_EDIT);
+  const canPay = hasPermission(PERMISSIONS.ORDERS_PROCESS_PAYMENT);
+  const canDelete = hasPermission(PERMISSIONS.ORDERS_DELETE);
+>>>>>>> Stashed changes
 
   // Client-side search filter (server handles status/date filter)
   const filtered = (orders || []).filter(o => {
@@ -108,6 +139,134 @@ export default function OrdersListPage() {
     });
   };
 
+  const renderOrderCard = (order) => {
+    const nextStatus = getNextStatus(order.status);
+    const buttonConfig = nextStatus ? STATUS_BUTTONS[nextStatus] : null;
+
+    return (
+      <div key={order.orderId}
+        className="rounded-2xl p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 cursor-pointer bg-white border border-[#F0E8DE] flex flex-col justify-between"
+        onClick={() => setSelectedOrder(order)}
+      >
+        <div>
+          <div className="flex items-start justify-between mb-3 gap-2">
+            <div>
+              <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                <span className="font-black text-base" style={{ color: '#2C1810', fontFamily: "'Playfair Display', serif" }}>
+                  {formatOrderId(order.orderId)}
+                </span>
+                <Badge status={order.status} />
+                <Badge status={order.type} label={order.type} />
+              </div>
+              <p className="font-bold text-sm" style={{ color: '#2C1810' }}>{order.customerName}</p>
+              <p className="text-xs" style={{ color: '#8B6E52' }}>
+                {order.tableNumber ? `Table ${order.tableNumber}` : order.type} · {new Date(order.orderDate).toLocaleTimeString()}
+              </p>
+            </div>
+            <div className="text-right flex-shrink-0">
+              <p className="font-black text-lg" style={{ color: '#C8862A', fontFamily: "'Playfair Display', serif" }}>
+                ETB {order.totalAmount}
+              </p>
+              <p className="text-[10px] uppercase font-bold tracking-wider" style={{ color: '#8B6E52' }}>{order.items?.length || 0} items</p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-1.5 mb-5 mt-2">
+            {order.items?.map(item => (
+              <span key={item.orderItemId} className="text-xs px-2.5 py-1 rounded-lg font-medium"
+                style={{ background: '#FAF0E6', color: '#8B6E52', border: '1px solid #F5E6D3' }}>
+                {item.quantity}× {item.itemName}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Action Button */}
+        {nextStatus && (
+          <div className="mt-auto">
+            {canPay && nextStatus === 'paid' ? (
+              <button onClick={e => { e.stopPropagation(); handleStatusAdvance(order.orderId, 'paid'); }}
+                className="w-full py-2.5 rounded-xl text-xs font-bold transition-all hover:scale-[1.02] shadow-sm flex items-center justify-center gap-2 text-white cursor-pointer"
+                style={{ background: STATUS_BUTTONS.paid.bg }}>
+                {React.createElement(STATUS_BUTTONS.paid.icon, { size: 14 })}
+                <span>{STATUS_BUTTONS.paid.label}</span>
+              </button>
+            ) : (
+              canEdit && buttonConfig && (
+                <button onClick={e => { e.stopPropagation(); handleStatusAdvance(order.orderId, nextStatus); }}
+                  className="w-full py-2.5 rounded-xl text-xs font-bold transition-all hover:scale-[1.02] shadow-sm flex items-center justify-center gap-2 text-white cursor-pointer"
+                  style={{ background: buttonConfig.bg }}>
+                  {React.createElement(buttonConfig.icon, { size: 14 })}
+                  <span>{buttonConfig.label}</span>
+                </button>
+              )
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderOrderListRow = (order) => {
+    const nextStatus = getNextStatus(order.status);
+    const buttonConfig = nextStatus ? STATUS_BUTTONS[nextStatus] : null;
+
+    return (
+      <div key={order.orderId}
+        className="rounded-2xl p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer bg-white border border-[#F0E8DE]"
+        onClick={() => setSelectedOrder(order)}
+      >
+        <div className="grid gap-4 md:grid-cols-[1.5fr_1fr_1fr_auto] items-center">
+          <div>
+            <div className="flex flex-wrap items-center gap-2 mb-1.5">
+              <span className="font-black text-sm" style={{ color: '#2C1810' }}>{formatOrderId(order.orderId)}</span>
+              <Badge status={order.status} />
+              <Badge status={order.type} label={order.type} />
+            </div>
+            <p className="text-sm font-bold" style={{ color: '#2C1810' }}>{order.customerName}</p>
+            <p className="text-xs" style={{ color: '#8B6E52' }}>
+              {order.tableNumber ? `Table ${order.tableNumber}` : order.type} · {new Date(order.orderDate).toLocaleTimeString()}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-1 max-h-12 overflow-hidden">
+            {order.items?.map(item => (
+              <span key={item.orderItemId} className="text-[10px] px-2 py-0.5 rounded bg-stone-50 border border-stone-200 text-stone-600">
+                {item.quantity}× {item.itemName}
+              </span>
+            ))}
+          </div>
+          <div className="text-right md:text-left">
+            <p className="font-black text-base" style={{ color: '#C8862A' }}>ETB {order.totalAmount}</p>
+            <p className="text-[10px] uppercase font-bold text-[#8B6E52]">{order.items?.length || 0} items</p>
+          </div>
+          <div className="flex gap-2">
+            {nextStatus && (
+              <>
+                {canPay && nextStatus === 'paid' ? (
+                  <button onClick={e => { e.stopPropagation(); handleStatusAdvance(order.orderId, 'paid'); }}
+                    className="px-4 py-2 rounded-xl text-xs font-bold transition-all hover:scale-102 flex items-center gap-1.5 text-white cursor-pointer shadow-sm"
+                    style={{ background: STATUS_BUTTONS.paid.bg }}>
+                    {React.createElement(STATUS_BUTTONS.paid.icon, { size: 13 })}
+                    <span>Pay</span>
+                  </button>
+                ) : (
+                  canEdit && buttonConfig && (
+                    <button onClick={e => { e.stopPropagation(); handleStatusAdvance(order.orderId, nextStatus); }}
+                      className="px-4 py-2 rounded-xl text-xs font-bold transition-all hover:scale-102 flex items-center gap-1.5 text-white cursor-pointer shadow-sm"
+                      style={{ background: buttonConfig.bg }}>
+                      {React.createElement(buttonConfig.icon, { size: 13 })}
+                      <span>{buttonConfig.label.split(' ')[0]}</span>
+                    </button>
+                  )
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="p-6 space-y-5">
       {/* ── Header ─────────────────────────────────────────── */}
@@ -122,34 +281,71 @@ export default function OrdersListPage() {
               : `${filtered.filter(o => !isTerminalStatus(o.status)).length} active orders`}
           </p>
         </div>
-        {canCreate && (
-          <button onClick={() => setIsCreatingOrder(true)}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all hover:scale-105"
-            style={{ background: 'linear-gradient(135deg, #C8862A, #8B3A0F)', color: 'white' }}>
-            <Plus size={16} /> New Order
-          </button>
-        )}
+        <div className="flex flex-wrap gap-3 items-center w-full sm:w-auto">
+          {canCreate && (
+            <button onClick={() => setIsCreatingOrder(true)}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all hover:scale-105 shadow-sm cursor-pointer"
+              style={{ background: 'linear-gradient(135deg, #C8862A, #8B3A0F)', color: 'white' }}>
+              <Plus size={16} /> New Order
+            </button>
+          )}
+          <div className="flex items-center gap-1 p-1 bg-amber-50/50 rounded-xl border border-amber-100 shadow-inner">
+            <button key="grid" onClick={() => setOrderViewMode('grid')}
+              className={`p-2 rounded-lg transition-all cursor-pointer ${orderViewMode === 'grid' ? 'bg-[#C8862A] text-white shadow-sm' : 'text-[#8B6E52] hover:bg-amber-100/50'}`}
+              title="Grid View">
+              <Grid size={16} />
+            </button>
+            <button key="list" onClick={() => setOrderViewMode('list')}
+              className={`p-2 rounded-lg transition-all cursor-pointer ${orderViewMode === 'list' ? 'bg-[#C8862A] text-white shadow-sm' : 'text-[#8B6E52] hover:bg-amber-100/50'}`}
+              title="List View">
+              <List size={16} />
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* ── Filters ────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl flex-1"
-          style={{ background: 'white', border: '1px solid #E8D5C0' }}>
-          <Search size={15} style={{ color: '#8B6E52' }} />
-          <input
-            value={filters.search || ''}
-            onChange={e => setFilters({ search: e.target.value })}
-            placeholder="Search orders..."
-            className="bg-transparent text-sm outline-none flex-1"
-            style={{ color: '#2C1810' }}
-          />
+      {/* ── Search & Filter Bar ──────────────────────────────── */}
+      <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center">
+        <div className="flex items-center gap-2 flex-1">
+          <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-[#E8D5C0] flex-1 shadow-sm focus-within:ring-2 focus-within:ring-amber-500/20 focus-within:border-amber-500 transition-all">
+            <Search size={16} className="text-[#8B6E52] flex-shrink-0" />
+            <input
+              value={filters.search || ''}
+              onChange={e => setFilters({ search: e.target.value })}
+              placeholder="Search orders by customer or ID..."
+              className="bg-transparent text-sm outline-none w-full"
+              style={{ color: '#2C1810' }}
+            />
+          </div>
+          
+          <button 
+            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all border shadow-sm cursor-pointer relative ${
+              showAdvancedFilters 
+                ? 'bg-amber-50 border-amber-400 text-[#8B3A0F] font-bold' 
+                : 'bg-white border-[#E8D5C0] text-[#8B6E52] hover:bg-stone-50'
+            }`}
+          >
+            <SlidersHorizontal size={15} />
+            <span className="hidden sm:inline">Filters</span>
+            {(filters.type !== 'all' || filters.tableId || filters.startDate || filters.endDate) && (
+              <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-amber-600 border-2 border-white animate-pulse" />
+            )}
+          </button>
         </div>
+<<<<<<< Updated upstream
         <div className="flex gap-2 flex-wrap">
           {statusFilters.map(s => (
+=======
+
+        {/* Status filters */}
+        <div className="flex gap-1.5 overflow-x-auto py-1 no-scrollbar flex-wrap">
+          {ALL_ORDER_STATUSES.map(s => (
+>>>>>>> Stashed changes
             <button key={s} onClick={() => setFilters({ status: s })}
-              className="px-3 py-2 rounded-xl text-xs font-medium capitalize transition-all"
+              className="px-3.5 py-2 rounded-xl text-xs font-semibold capitalize transition-all duration-200 cursor-pointer shadow-sm"
               style={filters.status === s
-                ? { background: '#C8862A', color: 'white' }
+                ? { background: 'linear-gradient(135deg, #C8862A, #8B3A0F)', color: 'white' }
                 : { background: 'white', color: '#8B6E52', border: '1px solid #E8D5C0' }}>
               {s}
             </button>
@@ -157,6 +353,7 @@ export default function OrdersListPage() {
         </div>
       </div>
 
+<<<<<<< Updated upstream
       {!isChef && (
       <div className="flex flex-wrap gap-2">
         <select value={filters.type || 'all'} onChange={e => setFilters({ type: e.target.value })}
@@ -186,11 +383,65 @@ export default function OrdersListPage() {
         </button>
       </div>
       )}
+=======
+      {/* ── Advanced Filters Drawer ─────────────────────────── */}
+      {showAdvancedFilters && (
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 p-5 rounded-2xl border border-amber-100 shadow-inner transition-all duration-300" style={{ background: '#FAF6F0' }}>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[10px] font-extrabold uppercase tracking-wider text-amber-800">Order Type</label>
+            <select value={filters.type || 'all'} onChange={e => setFilters({ type: e.target.value })}
+              className="w-full px-3 py-2.5 rounded-xl text-xs font-medium outline-none bg-white border border-amber-200 text-amber-900 shadow-sm cursor-pointer focus:ring-2 focus:ring-amber-500/20 capitalize">
+              <option value="all">All types</option>
+              <option value="dine-in">Dine in</option>
+              <option value="takeaway">Takeaway</option>
+              <option value="delivery">Delivery</option>
+            </select>
+          </div>
+>>>>>>> Stashed changes
 
-      {/* ── Orders Grid ────────────────────────────────────── */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[10px] font-extrabold uppercase tracking-wider text-amber-800">Table</label>
+            <select value={filters.tableId || ''} onChange={e => setFilters({ tableId: e.target.value || null })}
+              className="w-full px-3 py-2.5 rounded-xl text-xs font-medium outline-none bg-white border border-amber-200 text-amber-900 shadow-sm cursor-pointer focus:ring-2 focus:ring-amber-500/20">
+              <option value="">All tables</option>
+              {tables.map(t => <option key={t.tableId} value={t.tableId}>Table {t.number}</option>)}
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[10px] font-extrabold uppercase tracking-wider text-amber-800">Start Date</label>
+            <input type="date" value={filters.startDate || ''} onChange={e => setFilters({ startDate: e.target.value })}
+              className="w-full px-3 py-2.5 rounded-xl text-xs font-medium outline-none bg-white border border-amber-200 text-amber-900 shadow-sm cursor-pointer focus:ring-2 focus:ring-amber-500/20" />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[10px] font-extrabold uppercase tracking-wider text-amber-800">End Date</label>
+            <input type="date" value={filters.endDate || ''} onChange={e => setFilters({ endDate: e.target.value })}
+              className="w-full px-3 py-2.5 rounded-xl text-xs font-medium outline-none bg-white border border-amber-200 text-amber-900 shadow-sm cursor-pointer focus:ring-2 focus:ring-amber-500/20" />
+          </div>
+
+          <div className="flex items-end">
+            <button type="button" onClick={resetFilters}
+              className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all hover:scale-[1.02] bg-amber-100 hover:bg-amber-200/70 text-amber-900 border border-amber-200 cursor-pointer shadow-sm">
+              <RotateCcw size={13} /> Reset
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Orders Grid/List ────────────────────────────────── */}
       {isLoading ? (
         <div className="flex justify-center py-16"><Spinner size="lg" /></div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-16 text-[#8B6E52] border border-dashed border-[#E8D5C0] rounded-2xl bg-stone-50/50">
+          No orders found matching the filter criteria.
+        </div>
+      ) : orderViewMode === 'list' ? (
+        <div className="space-y-4">
+          {filtered.map(renderOrderListRow)}
+        </div>
       ) : (
+<<<<<<< Updated upstream
         <div className="grid lg:grid-cols-2 gap-4">
           {filtered.length === 0 ? (
             <div className="col-span-2 text-center py-16" style={{ color: '#8B6E52' }}>
@@ -252,6 +503,10 @@ export default function OrdersListPage() {
               </div>
             );
           })}
+=======
+        <div className="grid lg:grid-cols-2 gap-6">
+          {filtered.map(renderOrderCard)}
+>>>>>>> Stashed changes
         </div>
       )}
 
@@ -262,11 +517,11 @@ export default function OrdersListPage() {
             <div className="space-y-2">
               {[
                 { label: 'Customer', value: selectedOrder.customerName },
-                { label: 'Table',    value: selectedOrder.tableNumber ? `Table ${selectedOrder.tableNumber}` : 'N/A' },
-                { label: 'Type',     value: selectedOrder.type },
-                { label: 'Status',   value: <Badge status={selectedOrder.status} /> },
-                { label: 'Time',     value: new Date(selectedOrder.orderDate).toLocaleString() },
-                { label: 'Notes',    value: selectedOrder.notes || '–' },
+                { label: 'Table', value: selectedOrder.tableNumber ? `Table ${selectedOrder.tableNumber}` : 'N/A' },
+                { label: 'Type', value: selectedOrder.type },
+                { label: 'Status', value: <Badge status={selectedOrder.status} /> },
+                { label: 'Time', value: new Date(selectedOrder.orderDate).toLocaleString() },
+                { label: 'Notes', value: selectedOrder.notes || '–' },
               ].map(row => (
                 <div key={row.label} className="flex justify-between text-sm">
                   <span style={{ color: '#8B6E52' }}>{row.label}</span>
@@ -295,10 +550,10 @@ export default function OrdersListPage() {
       <Modal isOpen={isCreatingOrder} onClose={() => setIsCreatingOrder(false)} title="New Order" size="lg"
         footer={
           <div className="flex gap-3">
-            <button onClick={() => setIsCreatingOrder(false)} className="flex-1 py-3 rounded-xl text-sm font-medium"
+            <button onClick={() => setIsCreatingOrder(false)} className="flex-1 py-3 rounded-xl text-sm font-medium cursor-pointer"
               style={{ background: '#F0E8DE', color: '#6B4F3A' }}>Cancel</button>
             <button onClick={handleCreateOrder} disabled={createOrderMutation.isPending}
-              className="flex-1 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
+              className="flex-1 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-50 cursor-pointer"
               style={{ background: 'linear-gradient(135deg, #C8862A, #8B3A0F)' }}>
               {createOrderMutation.isPending ? 'Creating...' : 'Create Order'}
             </button>
@@ -352,11 +607,11 @@ export default function OrdersListPage() {
                         <span style={{ color: '#2C1810' }}>{menu?.name}</span>
                         <div className="flex items-center gap-2">
                           <button onClick={() => setOrderItems(p => p.map(i => i.itemId === oi.itemId ? { ...i, qty: Math.max(0, i.qty - 1) } : i).filter(i => i.qty > 0))}
-                            className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
+                            className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold cursor-pointer"
                             style={{ background: '#F0E8DE', color: '#8B6E52' }}>−</button>
                           <span className="font-bold" style={{ color: '#C8862A' }}>{oi.qty}</span>
                           <button onClick={() => addItemToOrder(oi.itemId)}
-                            className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
+                            className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold cursor-pointer"
                             style={{ background: '#C8862A', color: 'white' }}>+</button>
                           <span className="text-xs" style={{ color: '#C8862A' }}>ETB {(menu?.price || 0) * oi.qty}</span>
                         </div>
@@ -369,10 +624,10 @@ export default function OrdersListPage() {
           </div>
           <div>
             <h4 className="font-semibold mb-3" style={{ color: '#2C1810' }}>Select Items</h4>
-            <div className="space-y-2 max-h-80 overflow-y-auto">
+            <div className="space-y-2 max-h-80 overflow-y-auto animate-fadeIn">
               {menuItems.filter(m => m.availability).map(item => (
                 <button key={item.itemId} onClick={() => addItemToOrder(item.itemId)}
-                  className="w-full flex items-center justify-between p-3 rounded-xl text-left transition-all hover:scale-[1.01]"
+                  className="w-full flex items-center justify-between p-3 rounded-xl text-left transition-all hover:scale-[1.01] cursor-pointer"
                   style={{ background: '#FDF6EE', border: '1px solid #F0E8DE' }}>
                   <div>
                     <p className="font-medium text-sm" style={{ color: '#2C1810' }}>{item.name}</p>
