@@ -23,6 +23,7 @@ import { authStorage } from '../services/storage/index.js';
 import { authApi } from '../features/auth/api/index.js';
 
 const AuthContext = createContext(null);
+const AUTH_SESSION_EXPIRED_EVENT = 'auth:session-expired';
 
 export function AuthProvider({ children }) {
   const [user, setUser]         = useState(null);
@@ -37,6 +38,16 @@ export function AuthProvider({ children }) {
       setUser(storedUser);
     }
     setIsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      setUser(null);
+      setAuthError(null);
+    };
+
+    window.addEventListener(AUTH_SESSION_EXPIRED_EVENT, handleSessionExpired);
+    return () => window.removeEventListener(AUTH_SESSION_EXPIRED_EVENT, handleSessionExpired);
   }, []);
 
   /** Login — calls backend, stores tokens & user, updates state */

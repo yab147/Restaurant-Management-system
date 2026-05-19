@@ -11,6 +11,7 @@ import axios from 'axios';
 import { authStorage } from '../storage/index.js';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const AUTH_SESSION_EXPIRED_EVENT = 'auth:session-expired';
 
 // Create axios instance
 export const apiClient = axios.create({
@@ -36,6 +37,20 @@ const processQueue = (error, token = null) => {
     refreshQueue = [];
 };
 
+const isInvalidTokenResponse = (error) => {
+    const status = error.response?.status;
+    const message = error.response?.data?.message;
+    return status === 401 || (status === 403 && message === 'Invalid token');
+};
+
+const expireSession = () => {
+    authStorage.clearAll();
+    window.dispatchEvent(new Event(AUTH_SESSION_EXPIRED_EVENT));
+    if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+    }
+};
+
 // Request interceptor: inject auth token
 apiClient.interceptors.request.use(
     (config) => {
@@ -58,8 +73,8 @@ apiClient.interceptors.response.use(
     async (error) => {
         const originalRequest = error.config;
 
-        // Handle 401 - attempt token refresh
-        if (error.response?.status === 401 && !originalRequest._isRetry) {
+        // Handle expired/invalid access tokens - attempt token refresh once
+        if (originalRequest && isInvalidTokenResponse(error) && !originalRequest._isRetry) {
             // If already refreshing, queue this request
             if (isRefreshing) {
                 return new Promise((resolve, reject) => {
@@ -107,9 +122,8 @@ apiClient.interceptors.response.use(
             } catch (refreshError) {
                 // Token refresh failed - logout user
                 processQueue(refreshError, null);
-                authStorage.clearAll();
                 isRefreshing = false;
-                window.location.href = '/login'; // Redirect to login
+                expireSession();
                 return Promise.reject(refreshError);
             }
         }
@@ -121,8 +135,8 @@ apiClient.interceptors.response.use(
             code: error.response?.data?.code || 'UNKNOWN_ERROR',
         };
 
-        // Log errors in development
-        if (import.meta.env.DEV) {
+        // Log non-auth errors in development
+        if (import.meta.env.DEV && !isInvalidTokenResponse(error)) {
             console.error('[API Error]', errorResponse);
         }
 
