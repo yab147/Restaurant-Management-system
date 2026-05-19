@@ -9,7 +9,8 @@ import { PERMISSIONS } from '../../../permissions/matrix.js';
 import Badge from '../../../shared/components/ui/Badge.jsx';
 import Modal from '../../../shared/components/ui/Modal.jsx';
 import Spinner from '../../../shared/components/ui/Spinner.jsx';
-
+import { Link } from 'react-router-dom';
+import CustomerModal from '../../../shared/components/modals/CustomerModal.jsx';
 const EMPTY_FORM = { name: '', description: '', price: '', categoryId: '', availability: true, imageUrl: '' };
 const EMPTY_CATEGORY_FORM = { name: '', description: '', icon: '' };
 
@@ -35,6 +36,7 @@ export default function MenuPage() {
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
+  const [orderOpenItem, setOrderOpenItem] = useState(null);
   const filtered = useMemo(() => {
     let list = [...items];
     if (selectedCategory !== 'all') list = list.filter(i => i.categoryId === Number(selectedCategory));
@@ -144,6 +146,14 @@ export default function MenuPage() {
             </div>
           )}
         </div>
+        <div>
+            <button className='bg-blue-800 hover:bg-blue-950 hover:cursor-pointer
+             px-4 rounded-2xl shadow-2xl text-white font-bold mt-2'
+               onClick={() => setOrderOpenItem(item)}>
+              Order
+            </button>
+            <CustomerModal isOpen={!!orderOpenItem} initialItems={orderOpenItem ? [orderOpenItem.itemId] : []} onClose={() => setOrderOpenItem(null)} />
+          </div>
       </div>
     </div>
   );
@@ -194,6 +204,12 @@ export default function MenuPage() {
               <Trash2 size={14} />
             </button>
           )}
+          <div>
+            <button className='bg-blue-800 hover:bg-blue-950 hover:cursor-pointer px-4 rounded-2xl shadow-2xl text-white font-bold '
+            onClick={() => setOrderOpenItem(item)}
+            > Order</button>
+             <CustomerModal isOpen={!!orderOpenItem} initialItems={orderOpenItem ? [orderOpenItem.itemId] : []} onClose={() => setOrderOpenItem(null)} />
+          </div>
         </div>
       </div>
     </div>
