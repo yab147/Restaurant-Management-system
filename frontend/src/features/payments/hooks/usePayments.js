@@ -10,11 +10,12 @@ export function usePayments(filters = {}) {
   });
 }
 
-export function usePaymentStats(range) {
+export function usePaymentStats(range, options = {}) {
   return useQuery({
     queryKey: QUERY_KEYS.payments.stats(range),
     queryFn:  () => paymentsApi.getStats(range),
     staleTime: 60_000,
+    ...options,
   });
 }
 

@@ -25,7 +25,7 @@
 import React from 'react';
 import {
   LayoutDashboard, ClipboardList, UtensilsCrossed, Package,
-  CreditCard, Table2, Calendar, BarChart3, Users, Settings,
+  CreditCard, Table2, Calendar, BarChart3, Users, Settings, ChefHat,
 } from 'lucide-react';
 import { PERMISSIONS } from '../../../permissions/matrix.js';
 import { ROUTES }      from '../../../constants/routes.js';
@@ -38,6 +38,8 @@ import { ROUTES }      from '../../../constants/routes.js';
  *   icon:        ReactElement
  *   path:        string   — route to navigate to
  *   permissions: string[] — at least one required to show item
+ *   roles:       string[] — if set, only these roles see the item
+ *   hideRoles:   string[] — roles that never see this item
  *   group:       string   — section header (for visual grouping)
  * }
  */
@@ -56,6 +58,15 @@ export const SIDEBAR_NAV = [
     icon:        <ClipboardList size={18} />,
     path:        ROUTES.ORDERS,
     permissions: [PERMISSIONS.ORDERS_VIEW],
+    hideRoles:   ['chef'],
+    group:       'operations',
+  },
+  {
+    id:          'kitchen-queue',
+    label:       'Kitchen Queue',
+    icon:        <ChefHat size={18} />,
+    path:        ROUTES.KITCHEN,
+    permissions: [PERMISSIONS.ORDERS_QUEUE_MANAGE],
     group:       'operations',
   },
   {

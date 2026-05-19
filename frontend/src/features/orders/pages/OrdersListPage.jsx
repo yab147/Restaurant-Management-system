@@ -4,19 +4,20 @@
  * HOW PERMISSIONS SHAPE THIS PAGE:
  *  - ORDERS_VIEW          → see the list (all roles that can access this route)
  *  - ORDERS_CREATE        → see "New Order" button
- *  - ORDERS_EDIT          → see status advancement buttons
+ *  - ORDERS_EDIT          → see full status advancement buttons
+ *  - ORDERS_QUEUE_MANAGE  → kitchen status only (confirmed → preparing → ready)
  *  - ORDERS_PROCESS_PAYMENT → see "Process Payment" button (cashier)
  *  - ORDERS_DELETE        → see delete button (admin only)
  *
  * A waiter sees this page with Create + Edit.
- * A chef sees this page with only Edit (mark as ready).
+ * A chef sees status buttons for kitchen steps (preparing / ready).
  * A cashier sees this page with Process Payment.
  * Admin sees everything.
  *
  * ONE PAGE. MANY VIEWS. No duplication.
  */
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Plus, Search, RotateCcw } from 'lucide-react';
 import { useOrders, useUpdateOrderStatus, useCreateOrder } from '../hooks/useOrders.js';
 import { useOrderStore }   from '../store/useOrderStore.js';
@@ -29,33 +30,41 @@ import Badge               from '../../../shared/components/ui/Badge.jsx';
 import Spinner             from '../../../shared/components/ui/Spinner.jsx';
 import Modal               from '../../../shared/components/ui/Modal.jsx';
 import {
-  getNextStatus, isTerminalStatus, formatOrderId,
-  ALL_ORDER_STATUSES, calculateOrderTotal,
+  getAdvanceableNextStatus, isTerminalStatus, formatOrderId,
+  calculateOrderTotal,
 } from '../utils/orderUtils.js';
+import { getStatusFiltersForRole, buildOrderQueryFilters } from '../utils/roleOrderFilters.js';
 
 export default function OrdersListPage() {
   const { hasPermission } = usePermission();
   const { user } = useAuth();
   const { filters, setFilters, resetFilters, isCreatingOrder, setIsCreatingOrder } = useOrderStore();
 
-  // Server state via React Query
-  const { data: orders = [], isLoading } = useOrders(filters);
-  const { data: menuItems = [] }         = useMenuItems();
-  const { data: tables = [] }            = useTables();
+  const canCreate        = hasPermission(PERMISSIONS.ORDERS_CREATE);
+
+  const apiFilters = useMemo(
+    () => buildOrderQueryFilters(user?.role, filters),
+    [user?.role, filters],
+  );
+  const statusFilters = useMemo(() => getStatusFiltersForRole(user?.role), [user?.role]);
+
+  const { data: orders = [], isLoading } = useOrders(apiFilters);
+  const { data: menuItems = [] } = useMenuItems({}, { enabled: canCreate });
+  const { data: tables = [] } = useTables({ enabled: canCreate });
 
   const updateStatus  = useUpdateOrderStatus();
   const createOrderMutation = useCreateOrder();
 
-  // Local modal state
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [newForm, setNewForm] = useState({ customerName: '', tableId: '', type: 'dine-in', notes: '' });
   const [orderItems, setOrderItems] = useState([]);
+  const canEdit          = hasPermission(PERMISSIONS.ORDERS_EDIT);
+  const canQueueManage   = hasPermission(PERMISSIONS.ORDERS_QUEUE_MANAGE);
+  const canAdvanceStatus = canEdit || canQueueManage;
+  const canPay           = hasPermission(PERMISSIONS.ORDERS_PROCESS_PAYMENT);
+  const isChef           = user?.role === 'chef';
 
-  // Permissions
-  const canCreate  = hasPermission(PERMISSIONS.ORDERS_CREATE);
-  const canEdit    = hasPermission(PERMISSIONS.ORDERS_EDIT);
-  const canPay     = hasPermission(PERMISSIONS.ORDERS_PROCESS_PAYMENT);
-  const canDelete  = hasPermission(PERMISSIONS.ORDERS_DELETE);
+  const statusAdvanceOptions = { canEdit, canQueueManage: canQueueManage && !canEdit };
 
   // Client-side search filter (server handles status/date filter)
   const filtered = (orders || []).filter(o => {
@@ -105,10 +114,12 @@ export default function OrdersListPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-black" style={{ color: '#2C1810', fontFamily: "'Playfair Display', serif" }}>
-            Orders
+            {isChef ? 'Kitchen Orders' : 'Orders'}
           </h2>
           <p className="text-sm" style={{ color: '#8B6E52' }}>
-            {filtered.filter(o => !isTerminalStatus(o.status)).length} active orders
+            {isChef
+              ? `${filtered.length} orders in kitchen pipeline`
+              : `${filtered.filter(o => !isTerminalStatus(o.status)).length} active orders`}
           </p>
         </div>
         {canCreate && (
@@ -134,7 +145,7 @@ export default function OrdersListPage() {
           />
         </div>
         <div className="flex gap-2 flex-wrap">
-          {ALL_ORDER_STATUSES.map(s => (
+          {statusFilters.map(s => (
             <button key={s} onClick={() => setFilters({ status: s })}
               className="px-3 py-2 rounded-xl text-xs font-medium capitalize transition-all"
               style={filters.status === s
@@ -146,6 +157,7 @@ export default function OrdersListPage() {
         </div>
       </div>
 
+      {!isChef && (
       <div className="flex flex-wrap gap-2">
         <select value={filters.type || 'all'} onChange={e => setFilters({ type: e.target.value })}
           className="px-3 py-2 rounded-xl text-xs font-medium outline-none capitalize"
@@ -173,6 +185,7 @@ export default function OrdersListPage() {
           <RotateCcw size={13} /> Reset
         </button>
       </div>
+      )}
 
       {/* ── Orders Grid ────────────────────────────────────── */}
       {isLoading ? (
@@ -184,7 +197,7 @@ export default function OrdersListPage() {
               No orders found.
             </div>
           ) : filtered.map(order => {
-            const nextStatus = getNextStatus(order.status);
+            const nextStatus = getAdvanceableNextStatus(order.status, statusAdvanceOptions);
             return (
               <div key={order.orderId}
                 className="rounded-2xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer"
@@ -222,7 +235,7 @@ export default function OrdersListPage() {
                   ))}
                 </div>
 
-                {canEdit && nextStatus && order.status !== 'served' && (
+                {canAdvanceStatus && nextStatus && order.status !== 'served' && (
                   <button onClick={e => { e.stopPropagation(); handleStatusAdvance(order.orderId, nextStatus); }}
                     className="w-full py-2 rounded-xl text-sm font-medium transition-all hover:opacity-90"
                     style={{ background: '#F0E8DE', color: '#8B3A0F' }}>

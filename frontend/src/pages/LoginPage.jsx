@@ -21,7 +21,8 @@ const LoginPage = () => {
 
     const result = await login(email, password);
     if (result.success) {
-      navigate(ROUTES.DASHBOARD);
+      const dest = ROUTES.ROLE_DEFAULTS[result.user?.role] || ROUTES.DASHBOARD;
+      navigate(dest);
     } else {
       setError(result.error || 'Invalid email or password. Please try again.');
     }

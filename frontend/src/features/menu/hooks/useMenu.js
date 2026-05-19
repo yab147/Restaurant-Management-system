@@ -2,11 +2,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { menuApi } from '../api/index.js';
 import { QUERY_KEYS } from '../../../constants/queryKeys.js';
 
-export function useMenuItems(filters = {}) {
+export function useMenuItems(filters = {}, options = {}) {
   return useQuery({
     queryKey: QUERY_KEYS.menu.list(filters),
     queryFn:  () => menuApi.getAll(filters),
     staleTime: 60_000,
+    ...options,
   });
 }
 

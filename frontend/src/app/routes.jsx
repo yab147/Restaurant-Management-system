@@ -30,6 +30,7 @@ import Spinner           from '../shared/components/ui/Spinner.jsx';
 import LandingPage  from '../pages/LandingPage.jsx';
 import LoginPage    from '../pages/LoginPage.jsx';
 import SignupPage   from '../pages/SignupPage.jsx';
+import { ROUTES }   from '../constants/routes.js';
 
 // Feature route registries (each feature self-registers its routes)
 import { ordersRoutes }      from '../features/orders/routes/index.jsx';
@@ -66,14 +67,28 @@ function PageLoader() {
 
 // ── Protected route wrapper ──────────────────────────────────────────────────
 function ProtectedRoute({ route }) {
-  const { isAuthenticated, isLoading } = useAuth();
-  const { hasAnyPermission }           = usePermission();
-  const location                       = useLocation();
+  const { isAuthenticated, isLoading, user } = useAuth();
+  const { hasAnyPermission }               = usePermission();
+  const location                           = useLocation();
 
   if (isLoading) return <PageLoader />;
 
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  if (route.roles?.length > 0 && !route.roles.includes(user?.role)) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-64 p-8 text-center">
+        <div className="text-5xl mb-4">🔒</div>
+        <h2 className="text-xl font-bold mb-2" style={{ color: '#2C1810', fontFamily: "'Playfair Display', serif" }}>
+          Access Denied
+        </h2>
+        <p className="text-sm" style={{ color: '#8B6E52' }}>
+          This page is not available for your role.
+        </p>
+      </div>
+    );
   }
 
   // Permission gate — if route declares required permissions, enforce them
@@ -96,9 +111,12 @@ function ProtectedRoute({ route }) {
 
 // ── Guest route wrapper (redirect to dashboard if already logged in) ─────────
 function GuestRoute({ children }) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   if (isLoading) return <PageLoader />;
-  if (isAuthenticated) return <Navigate to="/dashboard" replace />;
+  if (isAuthenticated) {
+    const dest = ROUTES.ROLE_DEFAULTS[user?.role] || ROUTES.DASHBOARD;
+    return <Navigate to={dest} replace />;
+  }
   return <Suspense fallback={<PageLoader />}>{children}</Suspense>;
 }
 

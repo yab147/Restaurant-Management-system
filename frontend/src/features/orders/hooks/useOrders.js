@@ -15,6 +15,7 @@ import {
   updateOrderStatus, deleteOrder, assignOrderToWaiter, fetchOrderQueue, fetchOrderStats,
 } from '../api/index.js';
 import { QUERY_KEYS } from '../../../constants/queryKeys.js';
+import { NOTIFICATIONS_KEY } from '../../notifications/hooks/useNotifications.js';
 
 /** Fetch paginated/filtered orders list */
 export function useOrders(filters = {}, options = {}) {
@@ -103,6 +104,7 @@ export function useUpdateOrderStatus() {
 
     onSettled: () => {
       qc.invalidateQueries({ queryKey: QUERY_KEYS.orders.all() });
+      qc.invalidateQueries({ queryKey: NOTIFICATIONS_KEY });
     },
   });
 }

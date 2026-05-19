@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ClipboardList, UtensilsCrossed, Table2, CreditCard, Package, Calendar, BarChart3 } from 'lucide-react';
+import { ClipboardList, UtensilsCrossed, Table2, CreditCard, Package, Calendar, BarChart3, ChefHat } from 'lucide-react';
 import { useAuth }       from '../../../providers/AuthProvider.jsx';
 import { usePermission } from '../../../providers/PermissionProvider.jsx';
 import { PERMISSIONS }   from '../../../permissions/matrix.js';
@@ -32,10 +32,11 @@ export default function DashboardPage() {
   const { hasPermission }  = usePermission();
   const navigate           = useNavigate();
 
+  const isChef = user?.role === 'chef';
   const { data: orders = [],  isLoading: loadingOrders }  = useOrders();
-  const { data: tables = [],  isLoading: loadingTables }  = useTables();
+  const { data: tables = [],  isLoading: loadingTables }  = useTables({ enabled: hasPermission(PERMISSIONS.TABLES_VIEW) });
   const { data: orderStats }                              = useOrderStats();
-  const { data: payStats }                                = usePaymentStats();
+  const { data: payStats }                                = usePaymentStats({ enabled: hasPermission(PERMISSIONS.PAYMENTS_VIEW) });
 
   const roleColor = ROLE_COLORS[user?.role] || '#C8862A';
   const hour      = new Date().getHours();
@@ -47,11 +48,15 @@ export default function DashboardPage() {
   const availableTbls = (tables || []).filter(t => t && t.status === 'available').length;
 
   const widgets = [
-    hasPermission(PERMISSIONS.ORDERS_VIEW) && {
+    hasPermission(PERMISSIONS.ORDERS_QUEUE_MANAGE) && {
+      label: 'In Kitchen', value: loadingOrders ? '…' : activeOrders,
+      icon: <ChefHat size={18} />, color: '#D97706', path: ROUTES.KITCHEN,
+    },
+    hasPermission(PERMISSIONS.ORDERS_VIEW) && !isChef && {
       label: 'Active Orders', value: loadingOrders ? '…' : activeOrders,
       icon: <ClipboardList size={18} />, color: '#C8862A', path: ROUTES.ORDERS,
     },
-    hasPermission(PERMISSIONS.ORDERS_VIEW) && {
+    hasPermission(PERMISSIONS.ORDERS_VIEW) && hasPermission(PERMISSIONS.PAYMENTS_VIEW) && {
       label: 'Awaiting Payment', value: loadingOrders ? '…' : servedOrders,
       icon: <CreditCard size={18} />, color: '#DC2626', path: ROUTES.PAYMENTS,
     },
@@ -59,15 +64,20 @@ export default function DashboardPage() {
       label: 'Available Tables', value: loadingTables ? '…' : availableTbls,
       icon: <Table2 size={18} />, color: '#059669', path: ROUTES.TABLES,
     },
-    hasPermission(PERMISSIONS.ORDERS_VIEW) && {
+    hasPermission(PERMISSIONS.ORDERS_VIEW) && !isChef && {
       label: 'Pending Orders', value: loadingOrders ? '…' : pendingOrders,
       icon: <UtensilsCrossed size={18} />, color: '#D97706', path: ROUTES.ORDERS,
     },
   ].filter(Boolean);
 
   const quickLinks = [
+    hasPermission(PERMISSIONS.ORDERS_QUEUE_MANAGE) && { label: 'Kitchen Queue',   icon: <ChefHat size={16} />, path: ROUTES.KITCHEN },
     hasPermission(PERMISSIONS.ORDERS_VIEW)       && { label: 'View Orders',       icon: <ClipboardList size={16} />, path: ROUTES.ORDERS },
-    hasPermission(PERMISSIONS.MENU_VIEW)         && { label: 'Manage Menu',        icon: <UtensilsCrossed size={16} />, path: ROUTES.MENU },
+    hasPermission(PERMISSIONS.MENU_VIEW)         && {
+      label: hasPermission(PERMISSIONS.MENU_EDIT) ? 'Manage Menu' : 'View Menu',
+      icon: <UtensilsCrossed size={16} />,
+      path: ROUTES.MENU,
+    },
     hasPermission(PERMISSIONS.INVENTORY_VIEW)    && { label: 'Check Inventory',    icon: <Package size={16} />, path: ROUTES.INVENTORY },
     hasPermission(PERMISSIONS.RESERVATIONS_VIEW) && { label: 'Reservations',       icon: <Calendar size={16} />, path: ROUTES.RESERVATIONS },
     hasPermission(PERMISSIONS.REPORTS_VIEW)      && { label: 'Analytics',           icon: <BarChart3 size={16} />, path: ROUTES.REPORTS },
@@ -130,7 +140,7 @@ export default function DashboardPage() {
         <div className="rounded-2xl p-5" style={{ background: 'white', border: '1px solid #F0E8DE' }}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold" style={{ color: '#2C1810' }}>Recent Orders</h3>
-            <button onClick={() => navigate(ROUTES.ORDERS)} className="text-xs font-semibold" style={{ color: '#C8862A' }}>View All →</button>
+            <button onClick={() => navigate(isChef ? ROUTES.KITCHEN : ROUTES.ORDERS)} className="text-xs font-semibold" style={{ color: '#C8862A' }}>View All →</button>
           </div>
           {loadingOrders ? (
             <div className="flex justify-center py-6"><Spinner /></div>

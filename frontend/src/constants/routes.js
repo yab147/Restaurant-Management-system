@@ -25,6 +25,7 @@ export const ROUTES = {
   // Feature routes (domain-driven, single path per domain)
   DASHBOARD:    '/dashboard',
   ORDERS:       '/orders',
+  KITCHEN:      '/kitchen',
   MENU:         '/menu',
   INVENTORY:    '/inventory',
   PAYMENTS:     '/payments',
@@ -41,7 +42,7 @@ export const ROUTES = {
     manager:  '/dashboard',
     cashier:  '/dashboard',
     waiter:   '/waiter',
-    chef:     '/dashboard',
+    chef:     '/kitchen',
     customer: '/dashboard',
   },
 };

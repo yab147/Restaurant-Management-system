@@ -2,11 +2,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { tablesApi } from '../api/index.js';
 import { QUERY_KEYS } from '../../../constants/queryKeys.js';
 
-export function useTables() {
+export function useTables(options = {}) {
   return useQuery({
     queryKey: QUERY_KEYS.tables.list(),
     queryFn:  tablesApi.getAll,
     staleTime: 30_000,
+    ...options,
   });
 }
 

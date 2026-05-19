@@ -1,30 +1,21 @@
 /**
  * AppTopbar — Universal Top Navigation Bar
- *
- * Refactored from shared/components/Topbar.jsx
- * Old version imported from TWO contexts (AuthContext + AppContext) creating
- * a hard dependency on the god context. This version imports only what it needs.
- *
- * Data sourced from:
- *  - useAuth()       → user identity
- *  - useUI()         → sidebar toggle
- *  - useLocation()   → current page title
  */
 
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Menu, Bell, Mail, Phone, Shield, UserRound, ClipboardList, Package, CalendarClock, Check } from 'lucide-react';
+import { Menu, Bell, Mail, Phone, Shield, UserRound, ClipboardList, Package, CalendarClock, Check, CreditCard, ChefHat } from 'lucide-react';
 import { useAuth } from '../../../providers/AuthProvider.jsx';
 import { useUI }   from '../../../providers/index.jsx';
 import { ROLE_COLORS } from '../Sidebar/sidebarConfig.jsx';
-import { useOrders } from '../../../features/orders/hooks/useOrders.js';
-import { useLowStockAlerts } from '../../../features/inventory/hooks/useInventory.js';
-import { useReservations } from '../../../features/reservations/hooks/useReservations.js';
+import { useNotifications } from '../../../features/notifications/hooks/useNotifications.js';
 import { ROUTES } from '../../../constants/routes.js';
 
 const PAGE_TITLES = {
   '/dashboard':    'Dashboard',
   '/orders':       'Orders',
+  '/kitchen':      'Kitchen Queue',
+  '/waiter':       'My Station',
   '/menu':         'Menu Management',
   '/tables':       'Table Management',
   '/reservations': 'Reservations',
@@ -35,15 +26,18 @@ const PAGE_TITLES = {
   '/settings':     'Settings',
 };
 
+const NOTIFICATION_ICONS = {
+  order: ClipboardList,
+  kitchen: ChefHat,
+  inventory: Package,
+  reservation: CalendarClock,
+  payment: CreditCard,
+};
+
 const getGreeting = h => {
   if (h < 12) return 'Good Morning';
   if (h < 18) return 'Good Afternoon';
   return 'Good Evening';
-};
-
-const toLocalDateInput = (date) => {
-  const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-  return offsetDate.toISOString().slice(0, 10);
 };
 
 export default function AppTopbar() {
@@ -56,10 +50,7 @@ export default function AppTopbar() {
   const [showProfile, setShowProfile] = useState(false);
   const [dismissedNotifications, setDismissedNotifications] = useState([]);
 
-  const today = toLocalDateInput(currentTime);
-  const { data: pendingOrders = [] } = useOrders({ status: 'pending' }, { enabled: !!user, refetchInterval: 15000 });
-  const { data: lowStockItems = [] } = useLowStockAlerts({ enabled: !!user });
-  const { data: todayReservations = [] } = useReservations({ date: today, status: 'pending' }, { enabled: !!user, refetchInterval: 30000 });
+  const { data: notifications = [] } = useNotifications({ enabled: !!user });
 
   useEffect(() => {
     const t = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -81,32 +72,15 @@ export default function AppTopbar() {
     cashier: 'Payments and billing',
     customer: 'Guest account',
   }[user.role] || 'Restaurant team';
-  const notificationItems = [
-    ...pendingOrders.slice(0, 5).map(order => ({
-      id: `order-${order.orderId}`,
-      icon: <ClipboardList size={15} />,
-      title: `Pending order #${order.orderId}`,
-      detail: `${order.customerName || 'Guest'} · ETB ${order.totalAmount || 0}`,
-      color: '#D97706',
-      path: ROUTES.ORDERS,
-    })),
-    ...lowStockItems.slice(0, 5).map(item => ({
-      id: `stock-${item.ingredientId}`,
-      icon: <Package size={15} />,
-      title: `${item.name} is low`,
-      detail: `${item.quantity} ${item.unit} left · reorder at ${item.reorderLevel}`,
-      color: '#DC2626',
-      path: ROUTES.INVENTORY,
-    })),
-    ...todayReservations.slice(0, 5).map(reservation => ({
-      id: `reservation-${reservation.reservationId}`,
-      icon: <CalendarClock size={15} />,
-      title: `Reservation waiting`,
-      detail: `${reservation.customerName} · ${reservation.partySize} guests`,
-      color: '#0369A1',
-      path: ROUTES.RESERVATIONS,
-    })),
-  ].filter(n => !dismissedNotifications.includes(n.id)).slice(0, 8);
+
+  const notificationItems = (notifications || [])
+    .filter(n => !dismissedNotifications.includes(n.id))
+    .slice(0, 8)
+    .map(n => {
+      const Icon = NOTIFICATION_ICONS[n.type] || ClipboardList;
+      return { ...n, icon: <Icon size={15} /> };
+    });
+
   const unreadCount = notificationItems.length;
 
   const dismissNotification = (id) => {
@@ -124,7 +98,6 @@ export default function AppTopbar() {
       className="h-16 flex items-center justify-between px-6 border-b sticky top-0 z-20"
       style={{ background: 'var(--bg-light-cream)', borderColor: 'var(--bg-light-nude)' }}
     >
-      {/* Left — toggle + page title */}
       <div className="flex items-center gap-4">
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -146,14 +119,11 @@ export default function AppTopbar() {
         </div>
       </div>
 
-      {/* Right — notifications + user */}
       <div className="flex items-center gap-3">
-        {/* Clock */}
         <span className="hidden md:block text-xs font-mono" style={{ color: 'var(--text-brown-muted)' }}>
           {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </span>
 
-        {/* Notifications bell */}
         <div className="relative">
           <button
             onClick={() => { setShowNotifications(!showNotifications); setShowProfile(false); }}
@@ -175,7 +145,7 @@ export default function AppTopbar() {
               <div className="px-4 py-3 border-b" style={{ borderColor: '#F0E8DE' }}>
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-semibold" style={{ color: '#2C1810' }}>Notifications</p>
-                  <span className="text-[11px] font-semibold" style={{ color: '#8B6E52' }}>Live refresh</span>
+                  <span className="text-[11px] font-semibold" style={{ color: '#8B6E52' }}>Role: {user.role}</span>
                 </div>
                 <p className="text-xs text-gray-500">{getGreeting(currentTime.getHours())}, {user.name?.split(' ')[0]}!</p>
               </div>
@@ -191,7 +161,7 @@ export default function AppTopbar() {
                       onClick={() => openPath(item.path)}
                       className="flex flex-1 gap-3 text-left min-w-0"
                     >
-                      <span className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: `${item.color}18`, color: item.color }}>
+                      <span className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: `${item.color || '#C8862A'}18`, color: item.color || '#C8862A' }}>
                         {item.icon}
                       </span>
                       <span className="min-w-0">
@@ -224,7 +194,6 @@ export default function AppTopbar() {
           )}
         </div>
 
-        {/* User avatar */}
         <div className="relative">
           <button
             type="button"

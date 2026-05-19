@@ -7,9 +7,18 @@ export const login = async (req, res) => {
         const rows = await queryDB('SELECT * FROM users WHERE email = ? AND password = ?', [email, password]);
         if (rows.length > 0) {
             const user = rows[0];
-            const accessToken = jwt.sign({ userId: user.userId, email: user.email, role: user.role }, process.env.JWT_SECRET || 'secret123', { expiresIn: '1h' });
-            const refreshToken = jwt.sign({ userId: user.userId, email: user.email, role: user.role }, process.env.JWT_REFRESH_SECRET || 'refreshSecret123', { expiresIn: '7d' });
-            return res.json({ success: true, user, accessToken, refreshToken });
+            const accessToken = jwt.sign(
+                { userId: user.userId, email: user.email, role: user.role, name: user.name },
+                process.env.JWT_SECRET || 'secret123',
+                { expiresIn: '1h' },
+            );
+            const refreshToken = jwt.sign(
+                { userId: user.userId, email: user.email, role: user.role, name: user.name },
+                process.env.JWT_REFRESH_SECRET || 'refreshSecret123',
+                { expiresIn: '7d' },
+            );
+            const { password: _pw, ...safeUser } = user;
+            return res.json({ success: true, user: safeUser, accessToken, refreshToken });
         }
         return res.status(401).json({ success: false, message: 'Invalid credentials' });
     } catch (error) {
@@ -23,7 +32,11 @@ export const refresh = (req, res) => {
     if (!token) return res.status(401).json({ success: false, message: 'Refresh token required' });
     try {
         const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET || 'refreshSecret123');
-        const accessToken = jwt.sign({ userId: decoded.userId, email: decoded.email, role: decoded.role }, process.env.JWT_SECRET || 'secret123', { expiresIn: '1h' });
+        const accessToken = jwt.sign(
+            { userId: decoded.userId, email: decoded.email, role: decoded.role, name: decoded.name },
+            process.env.JWT_SECRET || 'secret123',
+            { expiresIn: '1h' },
+        );
         res.json({ success: true, accessToken });
     } catch (err) {
         res.status(403).json({ success: false, message: 'Invalid refresh token' });

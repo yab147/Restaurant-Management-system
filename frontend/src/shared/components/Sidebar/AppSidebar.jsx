@@ -39,7 +39,8 @@ export default function AppSidebar() {
   const visibleNav = SIDEBAR_NAV.filter(item => {
     const permissionAccess = hasAnyPermission(item.permissions);
     const roleAccess = item.roles ? item.roles.includes(user.role) : true;
-    return permissionAccess && roleAccess;
+    const notHidden = item.hideRoles ? !item.hideRoles.includes(user.role) : true;
+    return permissionAccess && roleAccess && notHidden;
   });
 
   // Group items by their group key

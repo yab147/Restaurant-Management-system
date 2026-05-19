@@ -12,6 +12,9 @@ import ingredientsRoutes from './routes/ingredients.js';
 import usersRoutes from './routes/users.js';
 import paymentsRoutes from './routes/payments.js';
 import reportsRoutes from './routes/reports.js';
+import notificationsRoutes from './routes/notifications.js';
+import { authenticate } from './middleware/authMiddleware.js';
+import { requirePaymentAccess } from './middleware/roleMiddleware.js';
 
 dotenv.config();
 
@@ -30,18 +33,21 @@ app.use(express.json());
   }
 })();
 
-// Mount modular routes
-app.use('/api', authRoutes);  // /login, /signup, /refresh, /me
-app.use('/api/auth', authRoutes);  // /auth/login, /auth/signup, /auth/refresh, /auth/me
-app.use('/api/menu', menuRoutes);
-app.use('/api/menu-categories', menuCategoriesRoutes);
-app.use('/api/orders', ordersRoutes);
-app.use('/api/reservations', reservationsRoutes);
-app.use('/api/tables', tablesRoutes);
-app.use('/api/ingredients', ingredientsRoutes);
-app.use('/api/users', usersRoutes);
-app.use('/api/payments', paymentsRoutes);
-app.use('/api/reports', reportsRoutes);
+// Public auth
+app.use('/api', authRoutes);
+app.use('/api/auth', authRoutes);
+
+// Protected API (JWT required)
+app.use('/api/menu', authenticate, menuRoutes);
+app.use('/api/menu-categories', authenticate, menuCategoriesRoutes);
+app.use('/api/orders', authenticate, ordersRoutes);
+app.use('/api/reservations', authenticate, reservationsRoutes);
+app.use('/api/tables', authenticate, tablesRoutes);
+app.use('/api/ingredients', authenticate, ingredientsRoutes);
+app.use('/api/users', authenticate, usersRoutes);
+app.use('/api/payments', authenticate, requirePaymentAccess, paymentsRoutes);
+app.use('/api/reports', authenticate, reportsRoutes);
+app.use('/api/notifications', authenticate, notificationsRoutes);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
