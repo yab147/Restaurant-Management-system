@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { queryDB, pool } from '../db/index.js';
 
-const ACCESS_TOKEN_EXPIRES_IN = '1d';
+const ACCESS_TOKEN_EXPIRES_IN = '1h';
 
 export const login = async (req, res) => {
     const { email, password } = req.body;
