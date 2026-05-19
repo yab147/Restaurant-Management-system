@@ -1,29 +1,5 @@
-<<<<<<< Updated upstream
-/**
- * OrdersListPage — The single Orders page for ALL roles
- *
- * HOW PERMISSIONS SHAPE THIS PAGE:
- *  - ORDERS_VIEW          → see the list (all roles that can access this route)
- *  - ORDERS_CREATE        → see "New Order" button
- *  - ORDERS_EDIT          → see full status advancement buttons
- *  - ORDERS_QUEUE_MANAGE  → kitchen status only (confirmed → preparing → ready)
- *  - ORDERS_PROCESS_PAYMENT → see "Process Payment" button (cashier)
- *  - ORDERS_DELETE        → see delete button (admin only)
- *
- * A waiter sees this page with Create + Edit.
- * A chef sees status buttons for kitchen steps (preparing / ready).
- * A cashier sees this page with Process Payment.
- * Admin sees everything.
- *
- * ONE PAGE. MANY VIEWS. No duplication.
- */
-
-import React, { useMemo, useState } from 'react';
-import { Plus, Search, RotateCcw } from 'lucide-react';
-=======
 import React, { useState } from 'react';
 import { Plus, Search, RotateCcw, Grid, List, SlidersHorizontal, Check, Flame, Bell, Coffee, CreditCard } from 'lucide-react';
->>>>>>> Stashed changes
 import { useOrders, useUpdateOrderStatus, useCreateOrder } from '../hooks/useOrders.js';
 import { useOrderStore } from '../store/useOrderStore.js';
 import { useMenuItems } from '../../menu/hooks/useMenu.js';
@@ -36,10 +12,9 @@ import Badge from '../../../shared/components/ui/Badge.jsx';
 import Spinner from '../../../shared/components/ui/Spinner.jsx';
 import Modal from '../../../shared/components/ui/Modal.jsx';
 import {
-  getAdvanceableNextStatus, isTerminalStatus, formatOrderId,
-  calculateOrderTotal,
+  getNextStatus, isTerminalStatus, formatOrderId,
+  ALL_ORDER_STATUSES, calculateOrderTotal,
 } from '../utils/orderUtils.js';
-import { getStatusFiltersForRole, buildOrderQueryFilters } from '../utils/roleOrderFilters.js';
 
 const STATUS_BUTTONS = {
   confirmed: { label: 'Confirm Order', icon: Check, bg: 'linear-gradient(135deg, #059669, #047857)', text: 'white' },
@@ -54,48 +29,26 @@ export default function OrdersListPage() {
   const { user } = useAuth();
   const { filters, setFilters, resetFilters, isCreatingOrder, setIsCreatingOrder } = useOrderStore();
 
-<<<<<<< Updated upstream
-  const canCreate        = hasPermission(PERMISSIONS.ORDERS_CREATE);
-
-  const apiFilters = useMemo(
-    () => buildOrderQueryFilters(user?.role, filters),
-    [user?.role, filters],
-  );
-  const statusFilters = useMemo(() => getStatusFiltersForRole(user?.role), [user?.role]);
-
-  const { data: orders = [], isLoading } = useOrders(apiFilters);
-  const { data: menuItems = [] } = useMenuItems({}, { enabled: canCreate });
-  const { data: tables = [] } = useTables({ enabled: canCreate });
-=======
   // Server state via React Query
   const { data: orders = [], isLoading } = useOrders(filters);
   const { data: menuItems = [] } = useMenuItems();
   const { data: tables = [] } = useTables();
->>>>>>> Stashed changes
 
   const updateStatus = useUpdateOrderStatus();
   const createOrderMutation = useCreateOrder();
   const [orderViewMode, setOrderViewMode] = useLocalStorage('ordersViewMode', 'grid');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
+  // Local modal state
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [newForm, setNewForm] = useState({ customerName: '', tableId: '', type: 'dine-in', notes: '' });
   const [orderItems, setOrderItems] = useState([]);
-  const canEdit          = hasPermission(PERMISSIONS.ORDERS_EDIT);
-  const canQueueManage   = hasPermission(PERMISSIONS.ORDERS_QUEUE_MANAGE);
-  const canAdvanceStatus = canEdit || canQueueManage;
-  const canPay           = hasPermission(PERMISSIONS.ORDERS_PROCESS_PAYMENT);
-  const isChef           = user?.role === 'chef';
 
-<<<<<<< Updated upstream
-  const statusAdvanceOptions = { canEdit, canQueueManage: canQueueManage && !canEdit };
-=======
   // Permissions
   const canCreate = hasPermission(PERMISSIONS.ORDERS_CREATE);
   const canEdit = hasPermission(PERMISSIONS.ORDERS_EDIT);
   const canPay = hasPermission(PERMISSIONS.ORDERS_PROCESS_PAYMENT);
   const canDelete = hasPermission(PERMISSIONS.ORDERS_DELETE);
->>>>>>> Stashed changes
 
   // Client-side search filter (server handles status/date filter)
   const filtered = (orders || []).filter(o => {
@@ -273,12 +226,10 @@ export default function OrdersListPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-black" style={{ color: '#2C1810', fontFamily: "'Playfair Display', serif" }}>
-            {isChef ? 'Kitchen Orders' : 'Orders'}
+            Orders
           </h2>
           <p className="text-sm" style={{ color: '#8B6E52' }}>
-            {isChef
-              ? `${filtered.length} orders in kitchen pipeline`
-              : `${filtered.filter(o => !isTerminalStatus(o.status)).length} active orders`}
+            {filtered.filter(o => !isTerminalStatus(o.status)).length} active orders
           </p>
         </div>
         <div className="flex flex-wrap gap-3 items-center w-full sm:w-auto">
@@ -333,15 +284,10 @@ export default function OrdersListPage() {
             )}
           </button>
         </div>
-<<<<<<< Updated upstream
-        <div className="flex gap-2 flex-wrap">
-          {statusFilters.map(s => (
-=======
 
         {/* Status filters */}
         <div className="flex gap-1.5 overflow-x-auto py-1 no-scrollbar flex-wrap">
           {ALL_ORDER_STATUSES.map(s => (
->>>>>>> Stashed changes
             <button key={s} onClick={() => setFilters({ status: s })}
               className="px-3.5 py-2 rounded-xl text-xs font-semibold capitalize transition-all duration-200 cursor-pointer shadow-sm"
               style={filters.status === s
@@ -353,37 +299,6 @@ export default function OrdersListPage() {
         </div>
       </div>
 
-<<<<<<< Updated upstream
-      {!isChef && (
-      <div className="flex flex-wrap gap-2">
-        <select value={filters.type || 'all'} onChange={e => setFilters({ type: e.target.value })}
-          className="px-3 py-2 rounded-xl text-xs font-medium outline-none capitalize"
-          style={{ background: 'white', color: '#6B4F3A', border: '1px solid #E8D5C0' }}>
-          <option value="all">All types</option>
-          <option value="dine-in">Dine in</option>
-          <option value="takeaway">Takeaway</option>
-          <option value="delivery">Delivery</option>
-        </select>
-        <select value={filters.tableId || ''} onChange={e => setFilters({ tableId: e.target.value || null })}
-          className="px-3 py-2 rounded-xl text-xs font-medium outline-none"
-          style={{ background: 'white', color: '#6B4F3A', border: '1px solid #E8D5C0' }}>
-          <option value="">All tables</option>
-          {tables.map(t => <option key={t.tableId} value={t.tableId}>Table {t.number}</option>)}
-        </select>
-        <input type="date" value={filters.startDate || ''} onChange={e => setFilters({ startDate: e.target.value })}
-          className="px-3 py-2 rounded-xl text-xs font-medium outline-none"
-          style={{ background: 'white', color: '#6B4F3A', border: '1px solid #E8D5C0' }} />
-        <input type="date" value={filters.endDate || ''} onChange={e => setFilters({ endDate: e.target.value })}
-          className="px-3 py-2 rounded-xl text-xs font-medium outline-none"
-          style={{ background: 'white', color: '#6B4F3A', border: '1px solid #E8D5C0' }} />
-        <button type="button" onClick={resetFilters}
-          className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold transition-all hover:bg-stone-100"
-          style={{ background: 'white', color: '#8B6E52', border: '1px solid #E8D5C0' }}>
-          <RotateCcw size={13} /> Reset
-        </button>
-      </div>
-      )}
-=======
       {/* ── Advanced Filters Drawer ─────────────────────────── */}
       {showAdvancedFilters && (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 p-5 rounded-2xl border border-amber-100 shadow-inner transition-all duration-300" style={{ background: '#FAF6F0' }}>
@@ -397,7 +312,6 @@ export default function OrdersListPage() {
               <option value="delivery">Delivery</option>
             </select>
           </div>
->>>>>>> Stashed changes
 
           <div className="flex flex-col gap-1.5">
             <label className="text-[10px] font-extrabold uppercase tracking-wider text-amber-800">Table</label>
@@ -441,72 +355,8 @@ export default function OrdersListPage() {
           {filtered.map(renderOrderListRow)}
         </div>
       ) : (
-<<<<<<< Updated upstream
-        <div className="grid lg:grid-cols-2 gap-4">
-          {filtered.length === 0 ? (
-            <div className="col-span-2 text-center py-16" style={{ color: '#8B6E52' }}>
-              No orders found.
-            </div>
-          ) : filtered.map(order => {
-            const nextStatus = getAdvanceableNextStatus(order.status, statusAdvanceOptions);
-            return (
-              <div key={order.orderId}
-                className="rounded-2xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer"
-                style={{ background: 'white', border: '1px solid #F0E8DE' }}
-                onClick={() => setSelectedOrder(order)}
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-black text-base" style={{ color: '#2C1810', fontFamily: "'Playfair Display', serif" }}>
-                        {formatOrderId(order.orderId)}
-                      </span>
-                      <Badge status={order.status} />
-                      <Badge status={order.type} label={order.type} />
-                    </div>
-                    <p className="font-semibold text-sm" style={{ color: '#2C1810' }}>{order.customerName}</p>
-                    <p className="text-xs" style={{ color: '#8B6E52' }}>
-                      {order.tableNumber ? `Table ${order.tableNumber}` : order.type} · {new Date(order.orderDate).toLocaleTimeString()}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-black text-lg" style={{ color: '#C8862A', fontFamily: "'Playfair Display', serif" }}>
-                      ETB {order.totalAmount}
-                    </p>
-                    <p className="text-xs" style={{ color: '#8B6E52' }}>{order.items?.length} items</p>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-1 mb-3">
-                  {order.items?.map(item => (
-                    <span key={item.orderItemId} className="text-xs px-2 py-0.5 rounded-full"
-                      style={{ background: '#F5E6D3', color: '#8B6E52' }}>
-                      {item.quantity}× {item.itemName}
-                    </span>
-                  ))}
-                </div>
-
-                {canAdvanceStatus && nextStatus && order.status !== 'served' && (
-                  <button onClick={e => { e.stopPropagation(); handleStatusAdvance(order.orderId, nextStatus); }}
-                    className="w-full py-2 rounded-xl text-sm font-medium transition-all hover:opacity-90"
-                    style={{ background: '#F0E8DE', color: '#8B3A0F' }}>
-                    → Mark as {nextStatus}
-                  </button>
-                )}
-                {canPay && order.status === 'served' && (
-                  <button onClick={e => { e.stopPropagation(); handleStatusAdvance(order.orderId, 'paid'); }}
-                    className="w-full py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90 text-white"
-                    style={{ background: 'linear-gradient(135deg, #059669, #065F46)' }}>
-                    ✓ Process Payment
-                  </button>
-                )}
-              </div>
-            );
-          })}
-=======
         <div className="grid lg:grid-cols-2 gap-6">
           {filtered.map(renderOrderCard)}
->>>>>>> Stashed changes
         </div>
       )}
 
