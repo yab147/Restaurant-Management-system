@@ -1,15 +1,31 @@
 import { pool, queryDB } from '../db/index.js';
 
+const cleanImageValue = (value) => {
+    const cleaned = String(value || '').trim();
+    return cleaned || null;
+};
+
 const mapMenuItem = (item) => ({
     ...item,
     price: Number(item.price) || 0,
     availability: Boolean(item.availability),
     isPopular: Boolean(item.isPopular),
     isSpicy: Boolean(item.isSpicy),
-    imageUrl: item.imageUrl || item.image || null,
+    imageUrl: cleanImageValue(item.imageUrl) || cleanImageValue(item.image),
 });
 
-const MAX_IMAGE_PAYLOAD = 600_000; // ~600k chars for data URLs / long URLs
+const MAX_IMAGE_PAYLOAD = 600_000; // Stored in MEDIUMTEXT; keep payloads comfortably below request limit.
+const MAX_LEGACY_IMAGE_LENGTH = 255;
+
+const normalizeImageFields = (body) => {
+    const imageUrl = body.imageUrl ?? body.image ?? null;
+    const imageUrlString = cleanImageValue(imageUrl);
+
+    return {
+        imageUrl: imageUrlString,
+        image: imageUrlString && imageUrlString.length <= MAX_LEGACY_IMAGE_LENGTH ? imageUrlString : null,
+    };
+};
 
 export const getMenu = async (req, res) => {
     try {
@@ -29,11 +45,13 @@ export const getMenuItemById = async (req, res) => {
 
 export const addMenuItem = async (req, res) => {
     const { categoryId, name, description, price, availability, prepTime, isSpicy, isPopular } = req.body;
-    const image = req.body.image ?? req.body.imageUrl ?? null;
-    const imageUrl = req.body.imageUrl ?? req.body.image ?? null;
+    const { image, imageUrl } = normalizeImageFields(req.body);
     const imgStr = String(imageUrl || '');
     if (imgStr.length > MAX_IMAGE_PAYLOAD) {
         return res.status(400).json({ error: 'Image is too large. Use a smaller file or a hosted image URL.' });
+    }
+    if (!name?.trim() || !Number(categoryId)) {
+        return res.status(400).json({ error: 'Name and category are required.' });
     }
     try {
         const [result] = await pool.query(
@@ -58,11 +76,13 @@ export const addMenuItem = async (req, res) => {
 export const updateMenuItem = async (req, res) => {
     const { id } = req.params;
     const { categoryId, name, description, price, availability, prepTime, isSpicy, isPopular } = req.body;
-    const image = req.body.image ?? req.body.imageUrl ?? null;
-    const imageUrl = req.body.imageUrl ?? req.body.image ?? null;
+    const { image, imageUrl } = normalizeImageFields(req.body);
     const imgStr = String(imageUrl || '');
     if (imgStr.length > MAX_IMAGE_PAYLOAD) {
         return res.status(400).json({ error: 'Image is too large. Use a smaller file or a hosted image URL.' });
+    }
+    if (!name?.trim() || !Number(categoryId)) {
+        return res.status(400).json({ error: 'Name and category are required.' });
     }
     try {
         await pool.query(

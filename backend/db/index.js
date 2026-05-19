@@ -18,4 +18,11 @@ const queryDB = async (sql, params = []) => {
     return rows;
 };
 
-export { pool, queryDB };
+const ensureSchema = async () => {
+    const [columns] = await pool.query('SHOW COLUMNS FROM menu_items LIKE ?', ['imageUrl']);
+    if (columns[0]?.Type?.toLowerCase() !== 'mediumtext') {
+        await pool.query('ALTER TABLE menu_items MODIFY imageUrl MEDIUMTEXT DEFAULT NULL');
+    }
+};
+
+export { pool, queryDB, ensureSchema };

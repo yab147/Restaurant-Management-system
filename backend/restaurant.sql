@@ -93,7 +93,7 @@ CREATE TABLE `menu_items` (
   `prepTime` int(11) DEFAULT NULL,
   `isPopular` tinyint(1) DEFAULT 0,
   `isSpicy` tinyint(1) DEFAULT 0,
-  `imageUrl` text DEFAULT NULL,
+  `imageUrl` mediumtext DEFAULT NULL,
   PRIMARY KEY (`itemId`),
   KEY `categoryId` (`categoryId`),
   CONSTRAINT `menu_items_ibfk_1` FOREIGN KEY (`categoryId`) REFERENCES `menu_categories` (`categoryId`)

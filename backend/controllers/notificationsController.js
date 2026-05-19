@@ -67,7 +67,7 @@ export const getNotifications = async (req, res) => {
 
     if (['admin', 'manager', 'waiter'].includes(role)) {
       const reservations = await queryDB(
-        `SELECT * FROM reservations WHERE DATE(reservationDate) = ? AND status = 'pending' ORDER BY reservationDate ASC LIMIT 5`,
+        `SELECT * FROM reservations WHERE DATE(dateTime) = ? AND status = 'pending' ORDER BY dateTime ASC LIMIT 5`,
         [today],
       );
       reservations.forEach(r => {

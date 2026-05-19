@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { pool } from './db/index.js';
+import { ensureSchema, pool } from './db/index.js';
 import authRoutes from './routes/auth.js';
 import menuRoutes from './routes/menu.js';
 import menuCategoriesRoutes from './routes/menuCategories.js';
@@ -29,6 +29,7 @@ app.use(express.json({ limit: '2mb' }));
     const connection = await pool.getConnection();
     console.log('Connected to Railway MySQL');
     connection.release();
+    await ensureSchema();
   } catch (error) {
     console.error('Database connection failed:', error);
   }
