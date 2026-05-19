@@ -82,7 +82,7 @@ export default function UsersPage() {
                     <select value={user.role} onChange={e => changeRole.mutate({ id: user.userId, role: e.target.value }, { onSuccess: () => toast.success('Role updated') })}
                       className="flex-1 px-3 py-2 rounded-xl text-xs outline-none capitalize"
                       style={{ border: '1px solid #E8D5C0', color: '#2C1810', background: 'white' }}>
-                      {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                      {ROLES.filter(r => r !== 'admin').map(r => <option key={r} value={r}>{r}</option>)}
                     </select>
                     <button onClick={() => { if (confirm('Delete this user?')) deleteUser.mutate(user.userId, { onSuccess: () => toast.success('Deleted') }); }}
                       className="p-2 rounded-xl hover:bg-red-50" style={{ color: '#DC2626' }}>
@@ -124,7 +124,7 @@ export default function UsersPage() {
             <select value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))}
               className="w-full px-4 py-3 rounded-xl text-sm outline-none capitalize"
               style={{ border: '2px solid #E8D5C0', color: '#2C1810', background: 'white' }}>
-              {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+              {ROLES.filter(r => r !== 'admin').map(r => <option key={r} value={r}>{r}</option>)}
             </select>
           </div>
         </div>

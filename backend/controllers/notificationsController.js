@@ -25,6 +25,22 @@ export const getNotifications = async (req, res) => {
     const items = [];
     const today = new Date().toISOString().slice(0, 10);
 
+    if (role === 'admin') {
+      // Admin notifications only trigger on system crashes. 
+      // Returns empty by default (system healthy), supports simulateCrash query.
+      if (req.query.simulateCrash === 'true') {
+        items.push({
+          id: 'crash-001',
+          type: 'crash',
+          title: 'CRITICAL: API Worker Node-03 Failed',
+          detail: 'Database socket timeout - 15 consecutive connections failed',
+          path: '/settings',
+          color: '#DC2626',
+        });
+      }
+      return res.json(items);
+    }
+
     if (role === 'waiter') {
       const pool = await queryDB(
         `SELECT * FROM orders WHERE status = 'pending' AND waiterId IS NULL ORDER BY orderDate DESC LIMIT 5`,

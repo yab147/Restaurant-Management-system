@@ -4,7 +4,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Menu, Bell, Mail, Phone, Shield, UserRound, ClipboardList, Package, CalendarClock, Check, CreditCard, ChefHat } from 'lucide-react';
+import { Menu, Bell, Mail, Phone, Shield, UserRound, ClipboardList, Package, CalendarClock, Check, CreditCard, ChefHat, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../../../providers/AuthProvider.jsx';
 import { useUI }   from '../../../providers/index.jsx';
 import { ROLE_COLORS } from '../Sidebar/sidebarConfig.jsx';
@@ -32,6 +32,7 @@ const NOTIFICATION_ICONS = {
   inventory: Package,
   reservation: CalendarClock,
   payment: CreditCard,
+  crash: AlertTriangle,
 };
 
 const getGreeting = h => {
@@ -59,7 +60,7 @@ export default function AppTopbar() {
 
   if (!user) return null;
 
-  const roleColor  = ROLE_COLORS[user.role] || '#C8862A';
+  const roleColor  = '#C8862A';
   const pageTitle  = PAGE_TITLES[location.pathname] || 'Dashboard';
   const initials   = user.name
     ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
@@ -73,7 +74,23 @@ export default function AppTopbar() {
     customer: 'Guest account',
   }[user.role] || 'Restaurant team';
 
-  const notificationItems = (notifications || [])
+  // Admin notifications should only work during a system crash.
+  let rawNotifications = [...(notifications || [])];
+  if (user.role === 'admin') {
+    rawNotifications = rawNotifications.filter(n => n.type === 'crash' || n.type === 'system_crash');
+    if (localStorage.getItem('simulate_crash') === 'true') {
+      rawNotifications.push({
+        id: 'simulated-crash',
+        type: 'crash',
+        title: 'CRITICAL: Microservice Node-03 Down',
+        detail: 'Memory allocation failed - Node-03 container restarted',
+        path: ROUTES.SETTINGS,
+        color: '#DC2626',
+      });
+    }
+  }
+
+  const notificationItems = rawNotifications
     .filter(n => !dismissedNotifications.includes(n.id))
     .slice(0, 8)
     .map(n => {

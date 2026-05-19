@@ -22,6 +22,7 @@ export default function TablesPage() {
   const deleteTable  = useDeleteTable();
 
   const canManage = hasPermission(PERMISSIONS.TABLES_MANAGE);
+  const canChangeStatus = hasPermission(PERMISSIONS.TABLES_STATUS);
 
   const [form, setForm] = React.useState(EMPTY_FORM);
 
@@ -91,7 +92,7 @@ export default function TablesPage() {
                 </div>
                 <Badge status={table.status} />
               </div>
-              {canManage && STATUS_CYCLE[table.status] && (
+              {canChangeStatus && STATUS_CYCLE[table.status] && (
                 <button onClick={() => handleStatusChange(table.tableId, STATUS_CYCLE[table.status])}
                   className="w-full mt-3 py-2 rounded-xl text-xs font-medium transition-all hover:opacity-90 capitalize"
                   style={{ background: '#F0E8DE', color: '#8B3A0F' }}>

@@ -17,6 +17,9 @@ export const getUserById = async (req, res) => {
 
 export const createUser = async (req, res) => {
     const { name, email, password, phone, role } = req.body;
+    if (role === 'admin') {
+        return res.status(400).json({ error: 'Creating admin users is not permitted' });
+    }
     try {
         const [result] = await pool.query(
             'INSERT INTO users (name, email, password, phone, role, avatar) VALUES (?, ?, ?, ?, ?, ?)',
@@ -29,6 +32,9 @@ export const createUser = async (req, res) => {
 export const updateUser = async (req, res) => {
     const { id } = req.params;
     const { name, email, phone, role, avatar } = req.body;
+    if (role === 'admin') {
+        return res.status(400).json({ error: 'Elevating user to admin is not permitted' });
+    }
     try {
         await pool.query(
             'UPDATE users SET name=?, email=?, phone=?, role=?, avatar=? WHERE userId=?',
@@ -46,6 +52,9 @@ export const deleteUser = async (req, res) => {
 };
 
 export const changeUserRole = async (req, res) => {
+    if (req.body.role === 'admin') {
+        return res.status(400).json({ error: 'Elevating user to admin is not permitted' });
+    }
     try {
         await pool.query('UPDATE users SET role=? WHERE userId=?', [req.body.role, req.params.id]);
         res.json({ success: true });

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { RefreshCw } from 'lucide-react';
 import { useAuth } from '../../../providers/AuthProvider.jsx';
 import { useOrders, useUpdateOrderStatus, useAssignOrderToWaiter } from '../hooks/useOrders.js';
 import { usePermission } from '../../../providers/PermissionProvider.jsx';
@@ -24,12 +25,17 @@ export default function WaiterDashboard() {
     return base;
   }, [selectedStatus, waiterId]);
 
-  const { data: assignedOrders = [], isLoading: isAssignedLoading } = useOrders(assignedFilters);
-  const { data: availableOrders = [], isLoading: isAvailableLoading } = useOrders({ status: 'pending', unassigned: true });
+  const { data: assignedOrders = [], isLoading: isAssignedLoading, isFetching: isAssignedFetching, refetch: refetchAssigned } = useOrders(assignedFilters);
+  const { data: availableOrders = [], isLoading: isAvailableLoading, isFetching: isAvailableFetching, refetch: refetchAvailable } = useOrders({ status: 'pending', unassigned: true });
   const updateStatus = useUpdateOrderStatus();
   const assignOrder = useAssignOrderToWaiter();
 
   const isLoading = isAssignedLoading || isAvailableLoading;
+  const isFetching = isAssignedFetching || isAvailableFetching;
+  const handleRefresh = () => {
+    refetchAssigned();
+    refetchAvailable();
+  };
   const activeAssigned = assignedOrders.filter(o => !isTerminalStatus(o.status));
 
   const ORDER_SECTIONS = [
@@ -64,6 +70,16 @@ export default function WaiterDashboard() {
           <h2 className="text-2xl font-black" style={{ color: '#2C1810', fontFamily: "'Playfair Display', serif" }}>Waiter dashboard</h2>
           <p className="text-sm" style={{ color: '#8B6E52' }}>{activeAssigned.length} active orders assigned to you</p>
         </div>
+        <button
+          type="button"
+          onClick={handleRefresh}
+          disabled={isFetching}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all hover:opacity-90 disabled:opacity-50 cursor-pointer shadow-sm border border-[#E8D5C0]"
+          style={{ background: '#F0E8DE', color: '#8B3A0F' }}
+        >
+          <RefreshCw size={16} className={isFetching ? 'animate-spin' : ''} />
+          Refresh
+        </button>
       </div>
 
       <section className="space-y-6">

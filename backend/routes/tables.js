@@ -7,14 +7,15 @@ import {
     updateTableStatus,
     deleteTable,
 } from '../controllers/tablesController.js';
+import { requireRoles } from '../middleware/roleMiddleware.js';
 
 const router = express.Router();
 
 router.get('/', getTables);
 router.get('/:id', getTableById);
-router.post('/', createTable);
-router.patch('/:id/status', updateTableStatus);
-router.put('/:id', updateTable);
-router.delete('/:id', deleteTable);
+router.post('/', requireRoles('admin', 'manager'), createTable);
+router.patch('/:id/status', requireRoles('admin', 'waiter'), updateTableStatus);
+router.put('/:id', requireRoles('admin', 'manager'), updateTable);
+router.delete('/:id', requireRoles('admin', 'manager'), deleteTable);
 
 export default router;

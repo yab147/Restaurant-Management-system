@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Search, RotateCcw, Grid, List, SlidersHorizontal, Check, Flame, Bell, Coffee, CreditCard } from 'lucide-react';
+import { Plus, Search, RotateCcw, Grid, List, SlidersHorizontal, Check, Flame, Bell, Coffee, CreditCard, RefreshCw } from 'lucide-react';
 import { useOrders, useUpdateOrderStatus, useCreateOrder } from '../hooks/useOrders.js';
 import { useOrderStore } from '../store/useOrderStore.js';
 import { useMenuItems } from '../../menu/hooks/useMenu.js';
@@ -30,7 +30,7 @@ export default function OrdersListPage() {
   const { filters, setFilters, resetFilters, isCreatingOrder, setIsCreatingOrder } = useOrderStore();
 
   // Server state via React Query
-  const { data: orders = [], isLoading } = useOrders(filters);
+  const { data: orders = [], isLoading, isFetching, refetch } = useOrders(filters);
   const { data: menuItems = [] } = useMenuItems();
   const { data: tables = [] } = useTables();
 
@@ -41,7 +41,7 @@ export default function OrdersListPage() {
 
   // Local modal state
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [newForm, setNewForm] = useState({ customerName: '', tableId: '', type: 'dine-in', notes: '' });
+  const [newForm, setNewForm] = useState({ tableId: '', type: 'dine-in', phone: '', notes: '' });
   const [orderItems, setOrderItems] = useState([]);
 
   // Permissions
@@ -69,8 +69,19 @@ export default function OrdersListPage() {
   };
 
   const handleCreateOrder = async () => {
-    if (!newForm.customerName || orderItems.length === 0) return;
+    if (newForm.type === 'takeaway' && !newForm.phone) {
+      toast.error('Phone number is required for Takeaway');
+      return;
+    }
+    if (orderItems.length === 0) {
+      toast.error('Please select at least one item');
+      return;
+    }
     const table = tables.find(t => t.tableId === Number(newForm.tableId));
+    const customerName = newForm.type === 'takeaway'
+      ? `Takeaway - ${newForm.phone}`
+      : (table ? `Table ${table.number}` : 'Guest');
+
     const items = orderItems.map(oi => {
       const menu = menuItems.find(m => m.itemId === oi.itemId);
       return { itemId: oi.itemId, itemName: menu?.name, quantity: oi.qty, unitPrice: menu?.price, subTotal: (menu?.price || 0) * oi.qty };
@@ -80,13 +91,13 @@ export default function OrdersListPage() {
       ? { waiterId: user.userId, waiterName: user.name }
       : {};
     createOrderMutation.mutate({
-      customerName: newForm.customerName, tableId: table?.tableId, tableNumber: table?.number,
+      customerName, tableId: table?.tableId, tableNumber: table?.number,
       type: newForm.type, totalAmount, notes: newForm.notes, items,
       ...waiterData,
     }, {
       onSuccess: () => {
         setIsCreatingOrder(false);
-        setNewForm({ customerName: '', tableId: '', type: 'dine-in', notes: '' });
+        setNewForm({ tableId: '', type: 'dine-in', phone: '', notes: '' });
         setOrderItems([]);
       },
     });
@@ -233,6 +244,16 @@ export default function OrdersListPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-3 items-center w-full sm:w-auto">
+          <button
+            type="button"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all hover:opacity-90 disabled:opacity-50 cursor-pointer shadow-sm border border-[#E8D5C0]"
+            style={{ background: '#F0E8DE', color: '#8B3A0F' }}
+          >
+            <RefreshCw size={16} className={isFetching ? 'animate-spin' : ''} />
+            Refresh
+          </button>
           {canCreate && (
             <button onClick={() => setIsCreatingOrder(true)}
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all hover:scale-105 shadow-sm cursor-pointer"
@@ -413,14 +434,6 @@ export default function OrdersListPage() {
         <div className="grid md:grid-cols-2 gap-6">
           <div className="space-y-4">
             <h4 className="font-semibold" style={{ color: '#2C1810' }}>Order Details</h4>
-            {[{ label: 'Customer Name', key: 'customerName', placeholder: 'Enter name' }].map(f => (
-              <div key={f.key}>
-                <label className="text-xs font-semibold uppercase tracking-wider block mb-1" style={{ color: '#6B4F3A' }}>{f.label}</label>
-                <input value={newForm[f.key]} onChange={e => setNewForm(p => ({ ...p, [f.key]: e.target.value }))}
-                  placeholder={f.placeholder} className="w-full px-4 py-3 rounded-xl text-sm outline-none"
-                  style={{ border: '2px solid #E8D5C0', color: '#2C1810' }} />
-              </div>
-            ))}
             <div>
               <label className="text-xs font-semibold uppercase tracking-wider block mb-1" style={{ color: '#6B4F3A' }}>Order Type</label>
               <select value={newForm.type} onChange={e => setNewForm(p => ({ ...p, type: e.target.value }))}
@@ -428,9 +441,16 @@ export default function OrdersListPage() {
                 style={{ border: '2px solid #E8D5C0', color: '#2C1810', background: 'white' }}>
                 <option value="dine-in">Dine In</option>
                 <option value="takeaway">Takeaway</option>
-                <option value="delivery">Delivery</option>
               </select>
             </div>
+            {newForm.type === 'takeaway' && (
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wider block mb-1" style={{ color: '#6B4F3A' }}>Phone Number *</label>
+                <input value={newForm.phone || ''} onChange={e => setNewForm(p => ({ ...p, phone: e.target.value }))}
+                  placeholder="Enter phone number" className="w-full px-4 py-3 rounded-xl text-sm outline-none"
+                  style={{ border: '2px solid #E8D5C0', color: '#2C1810' }} required />
+              </div>
+            )}
             {newForm.type === 'dine-in' && (
               <div>
                 <label className="text-xs font-semibold uppercase tracking-wider block mb-1" style={{ color: '#6B4F3A' }}>Table</label>
