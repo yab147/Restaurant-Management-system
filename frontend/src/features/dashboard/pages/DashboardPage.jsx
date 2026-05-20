@@ -55,7 +55,7 @@ export default function DashboardPage() {
   const { data: orders = [],  isLoading: loadingOrders, isFetching: fetchingOrders, refetch: refetchOrders }  = useOrders();
   const { data: tables = [],  isLoading: loadingTables, isFetching: fetchingTables, refetch: refetchTables }  = useTables({ enabled: hasPermission(PERMISSIONS.TABLES_VIEW) });
   const { data: orderStats, isFetching: fetchingOrderStats, refetch: refetchOrderStats }                              = useOrderStats();
-  const { data: payStats, isFetching: fetchingPayStats, refetch: refetchPayStats }                                = usePaymentStats({ enabled: hasPermission(PERMISSIONS.PAYMENTS_VIEW) });
+  const { data: payStats, isFetching: fetchingPayStats, refetch: refetchPayStats }                                = usePaymentStats(undefined, { enabled: hasPermission(PERMISSIONS.PAYMENTS_VIEW) });
 
   const isFetching = isAdmin 
     ? fetchingUsersList 

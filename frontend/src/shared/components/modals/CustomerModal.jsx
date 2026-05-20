@@ -67,10 +67,10 @@ export default function CustomerModal({ isOpen, onClose, initialItems = [] }) {
         const menu = menuItems.find(m => m.itemId === oi.itemId);
         return { 
           itemId: oi.itemId, 
-          itemName: menu?.name, 
+          itemName: menu?.name || 'Unknown Item', 
           quantity: oi.qty, 
-          unitPrice: menu?.price, 
-          subTotal: (menu?.price || 0) * oi.qty 
+          unitPrice: Number(menu?.price) || 0, 
+          subTotal: (Number(menu?.price) || 0) * oi.qty 
         };
       });
       
@@ -114,10 +114,10 @@ export default function CustomerModal({ isOpen, onClose, initialItems = [] }) {
         const menu = menuItems.find(m => m.itemId === oi.itemId);
         return { 
           itemId: oi.itemId, 
-          itemName: menu?.name, 
+          itemName: menu?.name || 'Unknown Item', 
           quantity: oi.qty, 
-          unitPrice: menu?.price, 
-          subTotal: (menu?.price || 0) * oi.qty 
+          unitPrice: Number(menu?.price) || 0, 
+          subTotal: (Number(menu?.price) || 0) * oi.qty 
         };
       });
       

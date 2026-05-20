@@ -71,206 +71,261 @@ export const getOrderById = async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 };
 
+export const getOrderStats = async (req, res) => {
+    try {
+        const stats = await queryDB(
+            `SELECT 
+                COUNT(*) as totalOrders,
+                SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pendingOrders,
+                SUM(CASE WHEN status = 'preparing' THEN 1 ELSE 0 END) as preparingOrders,
+                SUM(CASE WHEN status = 'ready' THEN 1 ELSE 0 END) as readyOrders,
+                SUM(CASE WHEN status = 'served' THEN 1 ELSE 0 END) as servedOrders,
+                SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END) as paidOrders,
+                SUM(totalAmount) as totalRevenue,
+                AVG(totalAmount) as avgOrderValue
+            FROM orders 
+            WHERE DATE(orderDate) = CURDATE()`
+        );
+        res.json(stats[0] || {});
+    } catch (e) { res.status(500).json({ error: e.message }); }
+};
+
 export const createOrder = async (req, res) => {
-    const { tableId, tableNumber, customerPhone, type, items, totalAmount, notes, waiterId, waiterName } = req.body;
-    
-    // Validation based on order type
-    if (!type || !Array.isArray(items) || items.length === 0) {
-        return res.status(400).json({ error: 'Type and at least one item are required' });
-    }
-    
-    // For takeaway: phone number is required
-    if (type === 'takeaway') {
-        if (!customerPhone || customerPhone.trim() === '') {
-            return res.status(400).json({ error: 'Customer phone is required for takeaway orders' });
-        }
-    }
-    
-    // For dine-in: table is required
-    if (type === 'dine-in' && !tableId) {
-        return res.status(400).json({ error: 'Table is required for dine-in orders' });
-    }
-
-    let assignedWaiterId = waiterId || null;
-    let assignedWaiterName = waiterName || null;
-    if (req.user?.role === 'waiter') {
-        assignedWaiterId = req.user.userId;
-        assignedWaiterName = req.user.name || req.user.email;
-    }
-
-    const connection = await pool.getConnection();
     try {
-        await connection.beginTransaction();
+        const { tableId, tableNumber, customerPhone, type, items, totalAmount, notes, waiterId, waiterName } = req.body;
+        
+        // Validation based on order type
+        if (!type || !Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({ error: 'Type and at least one item are required' });
+        }
+        
+        // For takeaway: phone number is required
+        if (type === 'takeaway') {
+            if (!customerPhone || customerPhone.trim() === '') {
+                return res.status(400).json({ error: 'Customer phone is required for takeaway orders' });
+            }
+        }
+        
+        // For dine-in: table is required
+        if (type === 'dine-in' && !tableId) {
+            return res.status(400).json({ error: 'Table is required for dine-in orders' });
+        }
 
-        const [orderResult] = await connection.query(
-            'INSERT INTO orders (tableId, tableNumber, customerPhone, waiterId, waiterName, type, status, orderDate, totalAmount, notes) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)',
-            [tableId || null, tableNumber || null, customerPhone || null, assignedWaiterId, assignedWaiterName, type, 'pending', totalAmount, notes || null]
-        );
-        const orderId = orderResult.insertId;
+        let assignedWaiterId = waiterId || null;
+        let assignedWaiterName = waiterName || null;
+        if (req.user?.role === 'waiter') {
+            assignedWaiterId = req.user.userId;
+            assignedWaiterName = req.user.name || req.user.email;
+        }
 
-        for (const item of items) {
-            const quantity = Number(item.quantity) || 1;
-            const unitPrice = Number(item.unitPrice ?? item.price) || 0;
-            await connection.query(
-                'INSERT INTO order_items (orderId, itemId, itemName, quantity, unitPrice, subTotal, notes) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                [
-                    orderId,
-                    item.itemId,
-                    item.itemName || item.name,
-                    quantity,
-                    unitPrice,
-                    Number(item.subTotal) || unitPrice * quantity,
-                    item.notes || null,
-                ]
+        const connection = await pool.getConnection();
+        try {
+            await connection.beginTransaction();
+
+            const [orderResult] = await connection.query(
+                'INSERT INTO orders (tableId, tableNumber, customerPhone, waiterId, waiterName, type, status, orderDate, totalAmount, notes) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)',
+                [tableId || null, tableNumber || null, customerPhone || null, assignedWaiterId, assignedWaiterName, type, 'pending', totalAmount, notes || null]
             );
-        }
+            const orderId = orderResult.insertId;
 
-        await connection.commit();
-        res.json({ success: true, orderId });
+            // Insert order items
+            for (const item of items) {
+                const quantity = Number(item.quantity) || 1;
+                const unitPrice = Number(item.unitPrice ?? item.price) || 0;
+                const subTotal = quantity * unitPrice;
+                
+                await connection.query(
+                    'INSERT INTO order_items (orderId, itemId, itemName, quantity, unitPrice, subTotal, notes) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                    [
+                        orderId,
+                        item.itemId,
+                        item.itemName || item.name,
+                        quantity,
+                        unitPrice,
+                        subTotal,
+                        item.notes || null
+                    ]
+                );
+            }
+
+            await connection.commit();
+
+            // Fetch and return the created order
+            const createdOrder = await queryDB('SELECT * FROM orders WHERE orderId = ?', [orderId]);
+            res.status(201).json(await mapOrder(createdOrder[0]));
+
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            await connection.release();
+        }
     } catch (e) {
-        await connection.rollback();
         res.status(500).json({ error: e.message });
-    } finally {
-        connection.release();
     }
-};
-
-export const updateOrder = async (req, res) => {
-    const { id } = req.params;
-    const { tableId, tableNumber, type, totalAmount, notes } = req.body;
-    try {
-        const existing = await queryDB('SELECT * FROM orders WHERE orderId = ?', [id]);
-        if (existing.length === 0) return res.status(404).json({ error: 'Order not found' });
-        if (!(await assertOrderAccess(req, existing[0], queryDB))) {
-            return res.status(403).json({ error: 'Access denied' });
-        }
-        await pool.query(
-            'UPDATE orders SET tableId=?, tableNumber=?, type=?, totalAmount=?, notes=? WHERE orderId=?',
-            [tableId, tableNumber, type, totalAmount, notes, id]
-        );
-        res.json({ success: true });
-    } catch (e) { res.status(500).json({ error: e.message }); }
-};
-
-export const updateOrderStatus = async (req, res) => {
-    try {
-        const existing = await queryDB('SELECT * FROM orders WHERE orderId = ?', [req.params.id]);
-        if (existing.length === 0) return res.status(404).json({ error: 'Order not found' });
-        const order = existing[0];
-        if (!(await assertOrderAccess(req, order, queryDB))) {
-            return res.status(403).json({ error: 'Access denied' });
-        }
-        const check = assertStatusTransition(req.user?.role, order.status, req.body.status);
-        if (!check.ok) return res.status(403).json({ error: check.error });
-        await pool.query('UPDATE orders SET status=? WHERE orderId=?', [req.body.status, req.params.id]);
-        res.json({ success: true });
-    } catch (e) { res.status(500).json({ error: e.message }); }
-};
-
-export const assignOrder = async (req, res) => {
-    const { status } = req.body;
-    let { waiterId, waiterName } = req.body;
-
-    if (req.user?.role === 'waiter') {
-        waiterId = req.user.userId;
-        waiterName = req.user.name || req.user.email;
-    }
-
-    try {
-        const existing = await queryDB('SELECT * FROM orders WHERE orderId = ?', [req.params.id]);
-        if (existing.length === 0) return res.status(404).json({ error: 'Order not found' });
-        const order = existing[0];
-        if (req.user?.role === 'waiter' && order.waiterId != null && Number(order.waiterId) !== Number(req.user.userId)) {
-            return res.status(403).json({ error: 'Order already assigned to another waiter' });
-        }
-        await pool.query(
-            'UPDATE orders SET waiterId=?, waiterName=?, status=COALESCE(?, status) WHERE orderId=?',
-            [waiterId || null, waiterName || null, status || null, req.params.id]
-        );
-        res.json({ success: true });
-    } catch (e) { res.status(500).json({ error: e.message }); }
-};
-
-export const deleteOrder = async (req, res) => {
-    try {
-        if (!['admin', 'manager'].includes(req.user?.role)) {
-            return res.status(403).json({ error: 'Only managers can delete orders' });
-        }
-        await pool.query('DELETE FROM order_items WHERE orderId=?', [req.params.id]);
-        await pool.query('DELETE FROM orders WHERE orderId=?', [req.params.id]);
-        res.json({ success: true });
-    } catch (e) { res.status(500).json({ error: e.message }); }
 };
 
 export const addOrderItem = async (req, res) => {
-    const { itemId, itemName, name, quantity = 1, unitPrice, price, notes } = req.body;
-    const parsedQuantity = Number(quantity) || 1;
-    const parsedPrice = Number(unitPrice ?? price) || 0;
-
     try {
-        const existing = await queryDB('SELECT * FROM orders WHERE orderId = ?', [req.params.id]);
-        if (existing.length === 0) return res.status(404).json({ error: 'Order not found' });
-        if (!(await assertOrderAccess(req, existing[0], queryDB))) {
-            return res.status(403).json({ error: 'Access denied' });
-        }
+        const { orderId } = req.params;
+        const { itemId, itemName, quantity, unitPrice, notes } = req.body;
+
+        // Validate order exists and user has access
+        const order = await queryDB('SELECT * FROM orders WHERE orderId = ?', [orderId]);
+        if (order.length === 0) return res.status(404).json({ error: 'Order not found' });
+        
+        const allowed = await assertOrderAccess(req, order[0], queryDB);
+        if (!allowed) return res.status(403).json({ error: 'Access denied' });
+
+        const qty = Number(quantity) || 1;
+        const price = Number(unitPrice) || 0;
+        const subTotal = qty * price;
+
         const [result] = await pool.query(
             'INSERT INTO order_items (orderId, itemId, itemName, quantity, unitPrice, subTotal, notes) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [req.params.id, itemId, itemName || name, parsedQuantity, parsedPrice, parsedPrice * parsedQuantity, notes || null]
+            [orderId, itemId, itemName, qty, price, subTotal, notes || null]
         );
+
+        // Update order total amount
+        const items = await queryDB('SELECT subTotal FROM order_items WHERE orderId = ?', [orderId]);
+        const newTotal = items.reduce((sum, item) => sum + Number(item.subTotal), 0);
+        
+        await pool.query('UPDATE orders SET totalAmount = ? WHERE orderId = ?', [newTotal, orderId]);
+
         res.json({ success: true, orderItemId: result.insertId });
     } catch (e) { res.status(500).json({ error: e.message }); }
 };
 
 export const removeOrderItem = async (req, res) => {
     try {
-        const existing = await queryDB('SELECT * FROM orders WHERE orderId = ?', [req.params.id]);
-        if (existing.length === 0) return res.status(404).json({ error: 'Order not found' });
-        if (!(await assertOrderAccess(req, existing[0], queryDB))) {
-            return res.status(403).json({ error: 'Access denied' });
-        }
-        await pool.query('DELETE FROM order_items WHERE orderId=? AND orderItemId=?', [req.params.id, req.params.itemId]);
+        const { orderId, itemId } = req.params;
+
+        // Validate order exists and user has access
+        const order = await queryDB('SELECT * FROM orders WHERE orderId = ?', [orderId]);
+        if (order.length === 0) return res.status(404).json({ error: 'Order not found' });
+        
+        const allowed = await assertOrderAccess(req, order[0], queryDB);
+        if (!allowed) return res.status(403).json({ error: 'Access denied' });
+
+        await pool.query('DELETE FROM order_items WHERE orderItemId = ? AND orderId = ?', [itemId, orderId]);
+
+        // Update order total amount
+        const items = await queryDB('SELECT subTotal FROM order_items WHERE orderId = ?', [orderId]);
+        const newTotal = items.reduce((sum, item) => sum + Number(item.subTotal), 0);
+        
+        await pool.query('UPDATE orders SET totalAmount = ? WHERE orderId = ?', [newTotal, orderId]);
+
         res.json({ success: true });
     } catch (e) { res.status(500).json({ error: e.message }); }
 };
 
-export const getOrderStats = async (req, res) => {
+export const updateOrder = async (req, res) => {
     try {
-        const conditions = ['(? IS NULL OR DATE(orderDate) >= ?)', '(? IS NULL OR DATE(orderDate) <= ?)'];
-        const params = [
-            req.query.startDate || null,
-            req.query.startDate || null,
-            req.query.endDate || null,
-            req.query.endDate || null,
-        ];
+        const { id } = req.params;
+        const { notes, tableId, customerPhone } = req.body;
 
-        if (req.user?.role === 'waiter') {
-            conditions.push('waiterId = ?');
-            params.push(Number(req.user.userId));
-        } else if (req.user?.role === 'chef') {
-            conditions.push(`status IN (${KITCHEN_STATUSES.map(() => '?').join(', ')})`);
-            params.push(...KITCHEN_STATUSES);
+        // Validate order exists and user has access
+        const order = await queryDB('SELECT * FROM orders WHERE orderId = ?', [id]);
+        if (order.length === 0) return res.status(404).json({ error: 'Order not found' });
+        
+        const allowed = await assertOrderAccess(req, order[0], queryDB);
+        if (!allowed) return res.status(403).json({ error: 'Access denied' });
+
+        const updateFields = [];
+        const updateValues = [];
+
+        if (notes !== undefined) {
+            updateFields.push('notes = ?');
+            updateValues.push(notes);
+        }
+        if (tableId !== undefined) {
+            updateFields.push('tableId = ?');
+            updateValues.push(tableId || null);
+        }
+        if (customerPhone !== undefined) {
+            updateFields.push('customerPhone = ?');
+            updateValues.push(customerPhone);
         }
 
-        const stats = await queryDB(`
-            SELECT
-                COUNT(*) AS totalOrders,
-                SUM(CASE WHEN status NOT IN ('paid', 'cancelled') THEN 1 ELSE 0 END) AS activeOrders,
-                SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pendingOrders,
-                SUM(CASE WHEN status = 'served' THEN 1 ELSE 0 END) AS servedOrders,
-                COALESCE(SUM(totalAmount), 0) AS totalRevenue,
-                COALESCE(AVG(totalAmount), 0) AS averageOrderValue
-            FROM orders
-            WHERE ${conditions.join(' AND ')}
-        `, params);
-        const row = stats[0] || {};
-        res.json({
-            ...row,
-            totalOrders: Number(row.totalOrders) || 0,
-            activeOrders: Number(row.activeOrders) || 0,
-            pendingOrders: Number(row.pendingOrders) || 0,
-            servedOrders: Number(row.servedOrders) || 0,
-            totalRevenue: Number(row.totalRevenue) || 0,
-            averageOrderValue: Number(row.averageOrderValue) || 0,
-        });
+        if (updateFields.length === 0) {
+            return res.status(400).json({ error: 'No fields to update' });
+        }
+
+        updateValues.push(id);
+        await pool.query(
+            `UPDATE orders SET ${updateFields.join(', ')} WHERE orderId = ?`,
+            updateValues
+        );
+
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+};
+
+export const updateOrderStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        // Validate order exists and user has access
+        const order = await queryDB('SELECT * FROM orders WHERE orderId = ?', [id]);
+        if (order.length === 0) return res.status(404).json({ error: 'Order not found' });
+        
+        const allowed = await assertOrderAccess(req, order[0], queryDB);
+        if (!allowed) return res.status(403).json({ error: 'Access denied' });
+
+        // Check valid status transition
+        const result = assertStatusTransition(req.user?.role, order[0].status, status);
+        if (!result.ok) {
+            return res.status(400).json({ error: result.error || 'Invalid status transition' });
+        }
+
+        await pool.query('UPDATE orders SET status = ? WHERE orderId = ?', [status, id]);
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+};
+
+export const assignOrder = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { waiterId, waiterName } = req.body;
+
+        // Validate order exists
+        const order = await queryDB('SELECT * FROM orders WHERE orderId = ?', [id]);
+        if (order.length === 0) return res.status(404).json({ error: 'Order not found' });
+
+        // Only managers can reassign orders
+        if (req.user?.role !== 'manager' && req.user?.role !== 'admin') {
+            return res.status(403).json({ error: 'Only managers can assign orders' });
+        }
+
+        await pool.query(
+            'UPDATE orders SET waiterId = ?, waiterName = ? WHERE orderId = ?',
+            [waiterId || null, waiterName || null, id]
+        );
+
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+};
+
+export const deleteOrder = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Validate order exists and user has access
+        const order = await queryDB('SELECT * FROM orders WHERE orderId = ?', [id]);
+        if (order.length === 0) return res.status(404).json({ error: 'Order not found' });
+        
+        const allowed = await assertOrderAccess(req, order[0], queryDB);
+        if (!allowed) return res.status(403).json({ error: 'Access denied' });
+
+        // Only allow deletion of pending or cancelled orders
+        if (!['pending', 'cancelled'].includes(order[0].status)) {
+            return res.status(400).json({ error: 'Can only delete pending or cancelled orders' });
+        }
+
+        await pool.query('DELETE FROM order_items WHERE orderId = ?', [id]);
+        await pool.query('DELETE FROM orders WHERE orderId = ?', [id]);
+
+        res.json({ success: true });
     } catch (e) { res.status(500).json({ error: e.message }); }
 };

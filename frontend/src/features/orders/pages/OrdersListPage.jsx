@@ -84,7 +84,7 @@ export default function OrdersListPage() {
 
     const items = orderItems.map(oi => {
       const menu = menuItems.find(m => m.itemId === oi.itemId);
-      return { itemId: oi.itemId, itemName: menu?.name, quantity: oi.qty, unitPrice: menu?.price, subTotal: (menu?.price || 0) * oi.qty };
+      return { itemId: oi.itemId, itemName: menu?.name || 'Unknown Item', quantity: oi.qty, unitPrice: Number(menu?.price) || 0, subTotal: (Number(menu?.price) || 0) * oi.qty };
     });
     const totalAmount = calculateOrderTotal(items.map(i => ({ unitPrice: i.unitPrice, quantity: i.quantity })));
     const waiterData = user?.role === 'waiter'
