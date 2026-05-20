@@ -113,9 +113,13 @@ export const createOrder = async (req, res) => {
 
         let assignedWaiterId = waiterId || null;
         let assignedWaiterName = waiterName || null;
+        let assignedCustomerId = null;
+
         if (req.user?.role === 'waiter') {
             assignedWaiterId = req.user.userId;
             assignedWaiterName = req.user.name || req.user.email;
+        } else if (req.user?.role === 'customer') {
+            assignedCustomerId = req.user.userId;
         }
 
         const connection = await pool.getConnection();
@@ -123,8 +127,8 @@ export const createOrder = async (req, res) => {
             await connection.beginTransaction();
 
             const [orderResult] = await connection.query(
-                'INSERT INTO orders (tableId, tableNumber, customerPhone, waiterId, waiterName, type, status, orderDate, totalAmount, notes) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)',
-                [tableId || null, tableNumber || null, customerPhone || null, assignedWaiterId, assignedWaiterName, type, 'pending', totalAmount, notes || null]
+                'INSERT INTO orders (tableId, tableNumber, customerId, customerPhone, waiterId, waiterName, type, status, orderDate, totalAmount, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)',
+                [tableId || null, tableNumber || null, assignedCustomerId, customerPhone || null, assignedWaiterId, assignedWaiterName, type, 'pending', totalAmount, notes || null]
             );
             const orderId = orderResult.insertId;
 

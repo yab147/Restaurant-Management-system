@@ -44,7 +44,8 @@ export function applyOrderListScope(req, conditions, params) {
   }
 
   if (role === 'customer') {
-    conditions.push('1 = 0');
+    conditions.push('customerId = ?');
+    params.push(Number(userId));
   }
 }
 
@@ -64,6 +65,10 @@ export async function assertOrderAccess(req, order, queryDB) {
 
   if (role === 'chef') {
     return KITCHEN_STATUSES.includes(order.status);
+  }
+
+  if (role === 'customer') {
+    return Number(order.customerId) === Number(userId);
   }
 
   return false;

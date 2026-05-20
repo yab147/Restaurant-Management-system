@@ -15,6 +15,7 @@ import {
   getNextStatus, isTerminalStatus, formatOrderId,
   ALL_ORDER_STATUSES, calculateOrderTotal,
 } from '../utils/orderUtils.js';
+import toast from 'react-hot-toast';
 
 const STATUS_BUTTONS = {
   confirmed: { label: 'Confirm Order', icon: Check, bg: 'linear-gradient(135deg, #059669, #047857)', text: 'white' },
