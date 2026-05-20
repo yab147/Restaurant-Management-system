@@ -147,7 +147,7 @@ export default function MenuPage() {
           )}
         </div>
         <div>
-            <button className='bg-blue-800 hover:bg-blue-950 hover:cursor-pointer
+            <button className='bg-[#b16c2c] hover:bg-[#703702] hover:cursor-pointer
              px-4 rounded-2xl shadow-2xl text-white font-bold mt-2'
                onClick={() => setOrderOpenItem(item)}>
               Order
@@ -205,7 +205,7 @@ export default function MenuPage() {
             </button>
           )}
           <div>
-            <button className='bg-blue-800 hover:bg-blue-950 hover:cursor-pointer px-4 rounded-2xl shadow-2xl text-white font-bold '
+            <button className='bg-[#b16c2c] hover:bg-blue-950 hover:cursor-pointer px-4 rounded-2xl shadow-2xl text-white font-bold '
             onClick={() => setOrderOpenItem(item)}
             > Order</button>
              <CustomerModal isOpen={!!orderOpenItem} initialItems={orderOpenItem ? [orderOpenItem.itemId] : []} onClose={() => setOrderOpenItem(null)} />

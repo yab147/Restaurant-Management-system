@@ -160,7 +160,7 @@ CREATE TABLE `orders` (
   `tableId` int(11) DEFAULT NULL,
   `tableNumber` int(11) DEFAULT NULL,
   `customerId` int(11) DEFAULT NULL,
-  `customerName` varchar(100) NOT NULL,
+  `customerPhone` varchar(30) DEFAULT NULL,
   `waiterId` int(11) DEFAULT NULL,
   `waiterName` varchar(100) DEFAULT NULL,
   `type` enum('dine-in','takeaway','delivery') NOT NULL,

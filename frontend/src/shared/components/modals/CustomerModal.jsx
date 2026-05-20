@@ -5,6 +5,9 @@ import { useTables } from '../../../features/tables/hooks/useTables.js'
 import { useCreateOrder } from '../../../features/orders/hooks/useOrders.js'
 import { useAuth } from '../../../providers/AuthProvider.jsx'
 import { calculateOrderTotal } from '../../../features/orders/utils/orderUtils.js'
+// Import for phone input with country code
+import PhoneInput from 'react-phone-number-input'
+import 'react-phone-number-input/style.css'
 
 export default function CustomerModal({ isOpen, onClose, initialItems = [] }) {
   const { data: menuItems = [] } = useMenuItems();
@@ -12,7 +15,12 @@ export default function CustomerModal({ isOpen, onClose, initialItems = [] }) {
   const createOrderMutation = useCreateOrder();
   const { user } = useAuth();
 
-  const [newForm, setNewForm] = useState({ customerName: '', tableId: '', type: 'dine-in', notes: '' });
+  const [newForm, setNewForm] = useState({ 
+    customerPhone: '',
+    tableId: '', 
+    type: 'dine-in', 
+    notes: '' 
+  });
   const [orderItems, setOrderItems] = useState([]);
 
   React.useEffect(() => {
@@ -21,7 +29,12 @@ export default function CustomerModal({ isOpen, onClose, initialItems = [] }) {
     }
     if (!isOpen) {
       setOrderItems([]);
-      setNewForm({ customerName: '', tableId: '', type: 'dine-in', notes: '' });
+      setNewForm({ 
+        customerPhone: '', 
+        tableId: '', 
+        type: 'dine-in', 
+        notes: '' 
+      });
     }
   }, [isOpen, initialItems]);
 
@@ -33,27 +46,107 @@ export default function CustomerModal({ isOpen, onClose, initialItems = [] }) {
     });
   };
 
-  const handleCreateOrder = () => {
-    if (!newForm.customerName || orderItems.length === 0) return;
-    const table = tables.find(t => t.tableId === Number(newForm.tableId));
-    const items = orderItems.map(oi => {
-      const menu = menuItems.find(m => m.itemId === oi.itemId);
-      return { itemId: oi.itemId, itemName: menu?.name, quantity: oi.qty, unitPrice: menu?.price, subTotal: (menu?.price || 0) * oi.qty };
-    });
-    const totalAmount = calculateOrderTotal(items.map(i => ({ unitPrice: i.unitPrice, quantity: i.quantity })));
-    const waiterData = user?.role === 'waiter' ? { waiterId: user.userId, waiterName: user.name } : {};
+  // Calculate total amount from order items
+  const totalAmount = orderItems.reduce((total, oi) => {
+    const menu = menuItems.find(m => m.itemId === oi.itemId);
+    return total + (menu?.price || 0) * oi.qty;
+  }, 0);
 
-    createOrderMutation.mutate({
-      customerName: newForm.customerName, tableId: table?.tableId, tableNumber: table?.number,
-      type: newForm.type, totalAmount, notes: newForm.notes, items,
-      ...waiterData,
-    }, {
-      onSuccess: () => {
-        setNewForm({ customerName: '', tableId: '', type: 'dine-in', notes: '' });
-        setOrderItems([]);
-        onClose();
-      }
-    });
+  const handleCreateOrder = () => {
+    // For dine-in: no phone number required
+    if (newForm.type === 'dine-in') {
+      if (orderItems.length === 0) return;
+      if (!newForm.tableId) return;
+      
+      const table = tables.find(t => t.tableId === Number(newForm.tableId));
+      
+      // Build customer name for dine-in
+      const customerName = table ? `Table ${table.number}` : 'Guest';
+      
+      const items = orderItems.map(oi => {
+        const menu = menuItems.find(m => m.itemId === oi.itemId);
+        return { 
+          itemId: oi.itemId, 
+          itemName: menu?.name, 
+          quantity: oi.qty, 
+          unitPrice: menu?.price, 
+          subTotal: (menu?.price || 0) * oi.qty 
+        };
+      });
+      
+      const totalAmountCalc = calculateOrderTotal(items.map(i => ({ unitPrice: i.unitPrice, quantity: i.quantity })));
+      const waiterData = user?.role === 'waiter' ? { waiterId: user.userId, waiterName: user.name } : {};
+
+      createOrderMutation.mutate({
+        customerName: customerName,  // Added customerName field
+        customerPhone: '',           // Empty for dine-in
+        tableId: table?.tableId, 
+        tableNumber: table?.number,
+        type: newForm.type, 
+        totalAmount: totalAmountCalc, 
+        notes: newForm.notes, 
+        items,
+        ...waiterData,
+      }, {
+        onSuccess: () => {
+          setNewForm({ 
+            customerPhone: '', 
+            tableId: '', 
+            type: 'dine-in', 
+            notes: '' 
+          });
+          setOrderItems([]);
+          onClose();
+        }
+      });
+      return;
+    }
+
+    // For takeaway: phone number required
+    if (newForm.type === 'takeaway') {
+      if (!newForm.customerPhone) return;
+      if (orderItems.length === 0) return;
+      
+      // Build customer name for takeaway
+      const customerName = `Takeaway - ${newForm.customerPhone}`;
+      
+      const items = orderItems.map(oi => {
+        const menu = menuItems.find(m => m.itemId === oi.itemId);
+        return { 
+          itemId: oi.itemId, 
+          itemName: menu?.name, 
+          quantity: oi.qty, 
+          unitPrice: menu?.price, 
+          subTotal: (menu?.price || 0) * oi.qty 
+        };
+      });
+      
+      const totalAmountCalc = calculateOrderTotal(items.map(i => ({ unitPrice: i.unitPrice, quantity: i.quantity })));
+      const waiterData = user?.role === 'waiter' ? { waiterId: user.userId, waiterName: user.name } : {};
+
+      createOrderMutation.mutate({
+        customerName: customerName,           // Added customerName field
+        customerPhone: newForm.customerPhone,
+        tableId: null,
+        tableNumber: null,
+        type: newForm.type, 
+        totalAmount: totalAmountCalc, 
+        notes: newForm.notes, 
+        items,
+        ...waiterData,
+      }, {
+        onSuccess: () => {
+          setNewForm({ 
+            customerPhone: '', 
+            tableId: '', 
+            type: 'dine-in', 
+            notes: '' 
+          });
+          setOrderItems([]);
+          onClose();
+        }
+      });
+    }
   };
 
   return (
@@ -73,12 +166,8 @@ export default function CustomerModal({ isOpen, onClose, initialItems = [] }) {
       <div className="grid md:grid-cols-2 gap-6">
         <div className="space-y-4">
           <h4 className="font-semibold" style={{ color: '#2C1810' }}>Order Details</h4>
-          <div>
-            <label className="text-xs font-semibold uppercase tracking-wider block mb-1" style={{ color: '#6B4F3A' }}>Customer Name</label>
-            <input value={newForm.customerName} onChange={e => setNewForm(p => ({ ...p, customerName: e.target.value }))}
-              placeholder="Enter name" className="w-full px-4 py-3 rounded-xl text-sm outline-none"
-              style={{ border: '2px solid #E8D5C0', color: '#2C1810' }} />
-          </div>
+          
+          {/* Order Type Selection */}
           <div>
             <label className="text-xs font-semibold uppercase tracking-wider block mb-1" style={{ color: '#6B4F3A' }}>Order Type</label>
             <select value={newForm.type} onChange={e => setNewForm(p => ({ ...p, type: e.target.value }))}
@@ -86,9 +175,36 @@ export default function CustomerModal({ isOpen, onClose, initialItems = [] }) {
               style={{ border: '2px solid #E8D5C0', color: '#2C1810', background: 'white' }}>
               <option value="dine-in">Dine In</option>
               <option value="takeaway">Takeaway</option>
-              <option value="delivery">Delivery</option>
             </select>
           </div>
+
+          {/* Customer Phone with Country Code - ONLY for takeaway */}
+          {newForm.type === 'takeaway' && (
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-wider block mb-1" style={{ color: '#6B4F3A' }}>
+                Customer Phone <span className="text-red-500">*</span>
+              </label>
+              <PhoneInput
+                international
+                countryCallingCodeEditable
+                defaultCountry="ET"
+                value={newForm.customerPhone}
+                onChange={(value) => setNewForm(p => ({ ...p, customerPhone: value || '' }))}
+                placeholder="Enter phone number with country code"
+                className="w-full"
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 1rem',
+                  borderRadius: '0.75rem',
+                  border: '2px solid #E8D5C0',
+                  background: 'white',
+                  fontSize: '0.875rem',
+                }}
+              />
+            </div>
+          )}
+
+          {/* Table Selection - ONLY for dine-in */}
           {newForm.type === 'dine-in' && (
             <div>
               <label className="text-xs font-semibold uppercase tracking-wider block mb-1" style={{ color: '#6B4F3A' }}>Table</label>
@@ -103,6 +219,20 @@ export default function CustomerModal({ isOpen, onClose, initialItems = [] }) {
             </div>
           )}
 
+          {/* Notes Field */}
+          <div>
+            <label className="text-xs font-semibold uppercase tracking-wider block mb-1" style={{ color: '#6B4F3A' }}>Notes</label>
+            <textarea
+              value={newForm.notes}
+              onChange={e => setNewForm(p => ({ ...p, notes: e.target.value }))}
+              placeholder="Add any special instructions or notes..."
+              rows="2"
+              className="w-full px-4 py-3 rounded-xl text-sm outline-none resize-none"
+              style={{ border: '2px solid #E8D5C0', color: '#2C1810', background: 'white' }}
+            />
+          </div>
+
+          {/* Selected Items Section with Total */}
           <div>
             <label className="text-xs font-semibold uppercase tracking-wider block mb-1" style={{ color: '#6B4F3A' }}>Selected Items</label>
             {orderItems.length === 0 ? (
@@ -127,10 +257,18 @@ export default function CustomerModal({ isOpen, onClose, initialItems = [] }) {
                     </div>
                   );
                 })}
+                {/* Total Birr span with "Total:" text */}
+                <div className="flex justify-end mt-3 pt-2 border-t border-amber-200">
+                  <span className="font-bold text-lg" style={{ color: '#bd6023' }}>
+                    Total: ETB {totalAmount}
+                  </span>
+                </div>
               </div>
             )}
           </div>
         </div>
+        
+        {/* Right Column - Menu Items Selection */}
         <div>
           <h4 className="font-semibold mb-3" style={{ color: '#2C1810' }}>Select Items</h4>
           <div className="space-y-2 max-h-80 overflow-y-auto animate-fadeIn">
@@ -146,20 +284,6 @@ export default function CustomerModal({ isOpen, onClose, initialItems = [] }) {
               </button>
             ))}
           </div>
-        </div>
-      </div>
-    </Modal>
-  )
-}
-
-export function CustomerOrderModal({ isOpen, onClose }) {
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} title="My Orders" size="lg">
-      <div>
-        <h4 className='capitalize text-[#2C1810] font-semibold my-4 flex justify-start '>my orders</h4>
-        {/* List of orders would go here */}
-        <div className='flex justify-end mt-6'>
-          <button className='bg-gray-300 hover:bg-gray-400 hover:cursor-pointer px-4 rounded-2xl shadow-2xl text-gray-800 font-bold mr-4' onClick={onClose}>Close</button>
         </div>
       </div>
     </Modal>
