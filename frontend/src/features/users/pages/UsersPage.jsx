@@ -9,7 +9,7 @@ import Modal from '../../../shared/components/ui/Modal.jsx';
 import Spinner from '../../../shared/components/ui/Spinner.jsx';
 import { ROLE_COLORS } from '../../../shared/components/Sidebar/sidebarConfig.jsx';
 
-const ROLES = ['admin', 'manager', 'cashier', 'waiter', 'chef', 'customer'];
+const ROLES = ['admin', 'cashier', 'waiter', 'chef', 'customer'];
 const EMPTY_FORM = { name: '', email: '', password: '', phone: '', role: 'waiter' };
 
 export default function UsersPage() {

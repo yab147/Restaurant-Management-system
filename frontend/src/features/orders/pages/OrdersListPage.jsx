@@ -91,7 +91,8 @@ export default function OrdersListPage() {
       ? { waiterId: user.userId, waiterName: user.name }
       : {};
     createOrderMutation.mutate({
-      customerName, tableId: table?.tableId, tableNumber: table?.number,
+      customerName, tableId: table?.tableId,
+     tableNumber: table?.number,
       type: newForm.type, totalAmount, notes: newForm.notes, items,
       ...waiterData,
     }, {
